@@ -45,7 +45,7 @@
 
 - (NSSet *)arcEnds ;
 
-- (MMVector3 *)position ;
+- (MMVector3 *)vertexPosition ;
 - (MMVector3 *)normal ;
 
 - (int) index ;

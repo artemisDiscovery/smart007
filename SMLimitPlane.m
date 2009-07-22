@@ -70,10 +70,7 @@
 		
 		dx = dy = dz = 0. ;
 		
-		NSEnumerator *atomEnumerator ;
-		NSNumber *nextAtom ;
 		double *xAtom, *yAtom, *zAtom ;
-		int a ;
 		
 		xAtom = mol->xAtom ;
 		yAtom = mol->yAtom ;
@@ -87,7 +84,7 @@
 		
 		if( [ cycleAtoms count ] < 3 )
 			{
-				printf( "WARNING: ONLY %d ATOMS IN REENTRANT CYCLE - CANNOT BUILD LIMIT PLANE!\n" ) ;
+				printf( "WARNING: ONLY %d ATOMS IN REENTRANT CYCLE - CANNOT BUILD LIMIT PLANE!\n", [ cycleAtoms count ] ) ;
 				return nil ;
 			}
 			

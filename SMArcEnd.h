@@ -22,7 +22,7 @@
 - (id) initWithArc:(SMArc *)a atStart:(BOOL)s ;
 
 - (SMArc *) arc ;
-- (BOOL) start ;
+- (BOOL) atStart ;
 
 
 @end

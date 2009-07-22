@@ -14,6 +14,7 @@
 #import "SMCycle.h"
 #include <sys/types.h>
 #include <unistd.h>
+#import "SMArcEnd.h"
 
 #define MAXSUBDIVIDECOUNT 10
 
@@ -988,7 +989,6 @@
 				
 				// To check for free torus
 				
-				BOOL foundProbePositions ;
 				
 				int nTest ;
 				
@@ -1316,7 +1316,7 @@
 						if( warningLevel <= 1 )
 							{
 								printf( "WARNING: ATOM TRIPLE %d %d %d SUPPORTS %d PROBES!\n", 
-									atomI, atomJ, atomK, [ probeArray count ] ) ;
+									atomI, atomJ, atomK, (int)[ probeArray count ] ) ;
 							}
 					}
 			}
@@ -1462,7 +1462,7 @@
 				if( ! firstRightProbe )
 					{
 						printf( "IN FUNCTION generateTori, ATOM PAIR %d - %d SUPPORTS %d PROBES BUT NO PROBE WITH RIGHT-HAND COLLISION - Exit!\n",
-							iAtom, jAtom, [ probesForTorus count ] ) ;
+							iAtom, jAtom, (int)[ probesForTorus count ] ) ;
 							
 						exit(1) ;
 					}
@@ -2054,7 +2054,7 @@ PROCESS_FREE_TORI:
 
 		
 			
-		printf( "\nGenerated %d contact cycles ...\n", [ contactCycles count ] ) ;
+		printf( "\nGenerated %d contact cycles ...\n", (int)[ contactCycles count ] ) ;
 		
 		return ;
 	}
@@ -2083,7 +2083,7 @@ PROCESS_FREE_TORI:
 		SMCycle *nextCycle ;
 		SMArc *nextArc ;
 		
-		int M, MNoSkip ;
+		int MNoSkip ;
 		BOOL hadAKill ;
 		
 		
@@ -2226,7 +2226,6 @@ PROCESS_FREE_TORI:
 		
 		int currentTorusIndex = 0 ;
 		
-		NSMutableArray *collectProbes = [ [ NSMutableArray alloc ] initWithCapacity:3 ] ;
 		
 		SMTorus *currentTorus = tori[currentTorusIndex] ;
 		
@@ -2505,7 +2504,7 @@ PROCESS_FREE_TORI:
 					}
 			}
 			
-		printf( "\nGenerated %d reentrant cycles ...\n", [ reentrantCycles count ] ) ;
+		printf( "\nGenerated %d reentrant cycles ...\n", (int)[ reentrantCycles count ] ) ;
 		
 		if( rh == NO ) return ;
 		
@@ -2519,7 +2518,7 @@ PROCESS_FREE_TORI:
 		// 2) Initially self-intersecting regions: If there is NO contact with another reent region, then switch off self-interection flag
 		
 		int nSelfIntOverturn = 0, nNonSelfIntOverturn = 0 ;
-		double minDist, dist, dx, dy, dz ;
+		double dist ;
 		
 		NSEnumerator *cycleEnumerator = [ reentrantCycles objectEnumerator ] ;
 		SMCycle *nextCycle ;
@@ -3180,7 +3179,6 @@ PROCESS_FREE_TORI:
 								
 								double perimeterJ, perimeterK, minJ, maxJ, minK, maxK, ratioJ, ratioK ;
 								
-								double deltaTheta, deltaPhi ;
 								
 								trialArcEnumerator = [ tryArcs objectEnumerator ] ;
 								
@@ -3267,8 +3265,6 @@ PROCESS_FREE_TORI:
 								
 								BOOL thetaNotZero ;
 								
-								NSEnumerator *subArcEnumerator ;
-								SMArc *subArc ;
 								
 								/*
 								subArcEnumerator = [ [ [ subCycles objectAtIndex:0 ] arcs ] objectEnumerator ] ;
@@ -3813,7 +3809,7 @@ PROCESS_FREE_TORI:
 				
 				MMVector3 *nextVertexPos ;
 				
-				nextVertexPos = [ nextVertex position ] ;
+				nextVertexPos = [ nextVertex vertexPosition ] ;
 				
 				if( isnan( [ nextVertexPos X ] ) || isnan( [ nextVertexPos Y ] ) || isnan( [ nextVertexPos Z ] ) )
 					{
@@ -3940,9 +3936,6 @@ PROCESS_FREE_TORI:
 		
 		NSMutableSet *boundaryElements = [ [ NSMutableSet alloc ] initWithCapacity:nElements  ] ;
 		
-		NSMutableSet *accumElements = [ [ NSMutableSet alloc ] initWithCapacity:nElements  ] ;
-		
-		NSMutableArray *elementsBySubsurface = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 		
 		// First vertex should be unassigned
 		
@@ -4112,7 +4105,7 @@ PROCESS_FREE_TORI:
 									{
 										if( ![ nextArc torusSection ] || [ [ nextArc torusSection ] freeTorus ] != YES || [ nextArc twin ] == nil )
 											{
-												printf( "ARC %p HAS %d PARENT CYCLES!\n", nextArc, [ [ nextArc parentCycles ] count ] ) ;
+												printf( "ARC %p HAS %d PARENT CYCLES!\n", nextArc, (int)[ [ nextArc parentCycles ] count ] ) ;
 												hadError = YES ;
 											}
 									}
@@ -4160,7 +4153,7 @@ PROCESS_FREE_TORI:
 		
 		if( [ checkVertices count ] > 0 )
 			{
-				printf( "WARNING: %d UNUSED VERTICES!\n", [ checkVertices count ] ) ;
+				printf( "WARNING: %d UNUSED VERTICES!\n", (int)[ checkVertices count ] ) ;
 				hadError = YES ;
 			}
 			
@@ -4185,7 +4178,7 @@ PROCESS_FREE_TORI:
 					{
 						theArc = [ nextArcEnd arc ] ;
 						
-						if( [ nextArcEnd start ] )
+						if( [ nextArcEnd atStart ] )
 							{
 								if( [ theArc startVertex ] != nextVertex )
 									{
@@ -4263,7 +4256,7 @@ PROCESS_FREE_TORI:
 						
 						cycleCount = [ atomsToCycles[iAtom] count ] ;
 						
-						SMCycle *cycleJ, *cycleK ;
+						SMCycle *cycleJ ;
 						
 						BOOL combinedCycles ;
 						
@@ -4283,7 +4276,6 @@ PROCESS_FREE_TORI:
 												// Try to build arc from arcs of cycle j to any of the arcs
 												// of cycle k. Tangent and intersection tests are applied.
 												
-												BOOL success ;
 												int M ;
 										
 												SMCycle *cycleK ;
@@ -4494,7 +4486,6 @@ PROCESS_FREE_TORI:
 														
 														while( ( nextTrial = [ trialArcEnumerator nextObject ] ) )
 															{
-																int arcIndex ;
 																
 																	
 																q = sin( [ [ nextTrial objectAtIndex:3 ] doubleValue ] ) ;
@@ -5809,7 +5800,6 @@ PROCESS_FREE_TORI:
 		
 		minAngle = acos(-1.) ;
 		
-		MMVector3 *test ;
 		
 		MMVector3 *testCross ;
 		double dot, dot2 ;
@@ -6220,7 +6210,7 @@ PROCESS_FREE_TORI:
 		// Collect vectors
 		
 		MMVector3 *tangent11, *tangent12, *tangent21, *tangent22 ;
-		MMVector3 *vertex1, *vertex2, *axis, *hostCenter, *normal1 ;
+		MMVector3 *vertex1, *vertex2, *hostCenter, *normal1 ;
 		
 		double hostRadius ;
 		
@@ -6715,9 +6705,8 @@ PROCESS_FREE_TORI:
 		double deltaAngle, endAngle ;
 		
 		int nDiv, iDiv ;
-		int startIndex, endIndex ;
 		
-		MMVector3 *endVector, *startU, *endU, *startPosition, *endPosition, *nextPos ;
+		MMVector3 *endVector, *startU, *endU ;
 		
 		SMVertex *startVertex, *endVertex ;
 		
@@ -7071,7 +7060,7 @@ PROCESS_FREE_TORI:
 		// (That may not be needed, I think it is 'forward' by construction)
 		
 		MMVector3 *testVector ;
-		SMArc *source, *target ;
+		SMArc *source ;
 		
 		source = [ [ cycleJ arcs ] objectAtIndex:startJ ] ;
 		BOOL aForward ;
@@ -7270,7 +7259,7 @@ PROCESS_FREE_TORI:
 		for( i = 0 ; i < nVertices ; ++i )
 			{
 				fprintf( output, "%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", 
-					[ [ [ vertices objectAtIndex:i ] position ] X ], [ [ [ vertices objectAtIndex:i ] position ] Y ], [ [ [ vertices objectAtIndex:i ] position ] Z ],
+					[ [ [ vertices objectAtIndex:i ] vertexPosition ] X ], [ [ [ vertices objectAtIndex:i ] vertexPosition ] Y ], [ [ [ vertices objectAtIndex:i ] vertexPosition ] Z ],
 					[ [ [ vertices objectAtIndex:i ] normal ] X ], [ [ [ vertices objectAtIndex:i ] normal ] Y ], [ [ [ vertices objectAtIndex:i ] normal ] Z ] ) ;
 			}
 			
@@ -7353,12 +7342,12 @@ PROCESS_FREE_TORI:
 										
 								if( [ nextForward boolValue ] == YES )
 									{
-										vs[vCount] = [ [ nextArc startVertex ] position ] ;
+										vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
 										ivs[vCount] = [ [ nextArc startVertex] index ] ;
 									}
 								else
 									{
-										vs[vCount] = [ [ nextArc endVertex ] position ] ;
+										vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
 										ivs[vCount] = [ [ nextArc endVertex ] index ] ;
 									}
 									
@@ -7471,7 +7460,7 @@ PROCESS_FREE_TORI:
 		
 		// First, sort subsurfaces by size, which we will do crudely as # vertices
 		
-		typedef struct { int subsurfaceName ; int subsurfaceSize ; int contactElems ; int reentrantElems ; int saddleElems ; FILE *outFile } subsurfaceData ;
+		typedef struct { int subsurfaceName ; int subsurfaceSize ; int contactElems ; int reentrantElems ; int saddleElems ; FILE *outFile ; } subsurfaceData ;
 
 		subsurfaceData *subsurfaceInfo = (subsurfaceData *) malloc( nSubsurfaces * sizeof( subsurfaceData ) ) ;
 		
@@ -7628,7 +7617,7 @@ PROCESS_FREE_TORI:
 				for( i = 0 ; i < [ nextVertices count ] ; ++i )
 					{
 						fprintf( subsurfaceInfo[j].outFile, "%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", 
-							[ [ [ nextVertices objectAtIndex:i ] position ] X ], [ [ [ nextVertices objectAtIndex:i ] position ] Y ], [ [ [ nextVertices objectAtIndex:i ] position ] Z ],
+							[ [ [ nextVertices objectAtIndex:i ] vertexPosition ] X ], [ [ [ nextVertices objectAtIndex:i ] vertexPosition ] Y ], [ [ [ nextVertices objectAtIndex:i ] vertexPosition ] Z ],
 							[ [ [ nextVertices objectAtIndex:i ] normal ] X ], [ [ [ nextVertices objectAtIndex:i ] normal ] Y ], [ [ [ nextVertices objectAtIndex:i ] normal ] Z ] ) ;
 					}
 			}
@@ -7721,12 +7710,12 @@ PROCESS_FREE_TORI:
 										
 								if( [ nextForward boolValue ] == YES )
 									{
-										vs[vCount] = [ [ nextArc startVertex ] position ] ;
+										vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
 										ivs[vCount] = [ [ nextArc startVertex] subsurfaceIndex] ;
 									}
 								else
 									{
-										vs[vCount] = [ [ nextArc endVertex ] position ] ;
+										vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
 										ivs[vCount] = [ [ nextArc endVertex ] subsurfaceIndex ] ;
 									}
 									
@@ -7879,7 +7868,7 @@ PROCESS_FREE_TORI:
 		for( i = 0 ; i < nVertices ; ++i )
 			{
 				fprintf( output, "%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", 
-					[ [ [ vertices objectAtIndex:i ] position ] X ], [ [ [ vertices objectAtIndex:i ] position ] Y ], [ [ [ vertices objectAtIndex:i ] position ] Z ],
+					[ [ [ vertices objectAtIndex:i ] vertexPosition ] X ], [ [ [ vertices objectAtIndex:i ] vertexPosition ] Y ], [ [ [ vertices objectAtIndex:i ] vertexPosition ] Z ],
 					[ [ [ vertices objectAtIndex:i ] normal ] X ], [ [ [ vertices objectAtIndex:i ] normal ] Y ], [ [ [ vertices objectAtIndex:i ] normal ] Z ] ) ;
 			}
 			
@@ -7891,12 +7880,10 @@ PROCESS_FREE_TORI:
 		
 		MMVector3 *pMid, *norm ;
 
-		MMVector3 *normal  ;
 		
-		MMVector3 *vs[3], *v12, *v13 ;
+		MMVector3 *vs[3] ;
 		int ivs[3], vCount ;
 		
-		double dx12, dy12, dz12, dx13, dy13, dz13 ;
 		
 			
 				
@@ -7995,7 +7982,7 @@ PROCESS_FREE_TORI:
 										
 								if( [ nextForward boolValue ] == YES )
 									{
-										vs[vCount] = [ [ nextArc startVertex ] position ] ;
+										vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
 										ivs[vCount] = [ [ nextArc startVertex] index ] ;
 										
 										 [ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(1./3.) usingMolecule:self ] ;
@@ -8003,7 +7990,7 @@ PROCESS_FREE_TORI:
 									}
 								else
 									{
-										vs[vCount] = [ [ nextArc endVertex ] position ] ;
+										vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
 										ivs[vCount] = [ [ nextArc endVertex ] index ] ;
 										
 										[ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(2./3.) usingMolecule:self ] ;
@@ -8252,7 +8239,7 @@ PROCESS_FREE_TORI:
 				for( i = 0 ; i < [ nextVertices count ] ; ++i )
 					{
 						fprintf( subsurfaceInfo[j].outFile, "%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", 
-							[ [ [ nextVertices objectAtIndex:i ] position ] X ], [ [ [ nextVertices objectAtIndex:i ] position ] Y ], [ [ [ nextVertices objectAtIndex:i ] position ] Z ],
+							[ [ [ nextVertices objectAtIndex:i ] vertexPosition ] X ], [ [ [ nextVertices objectAtIndex:i ] vertexPosition ] Y ], [ [ [ nextVertices objectAtIndex:i ] vertexPosition ] Z ],
 							[ [ [ nextVertices objectAtIndex:i ] normal ] X ], [ [ [ nextVertices objectAtIndex:i ] normal ] Y ], [ [ [ nextVertices objectAtIndex:i ] normal ] Z ] ) ;
 					}
 			}
@@ -8345,7 +8332,7 @@ PROCESS_FREE_TORI:
 										
 								if( [ nextForward boolValue ] == YES )
 									{
-										vs[vCount] = [ [ nextArc startVertex ] position ] ;
+										vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
 										ivs[vCount] = [ [ nextArc startVertex] subsurfaceIndex] ;
 										
 										[ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(1./3.) usingMolecule:self ] ;
@@ -8354,7 +8341,7 @@ PROCESS_FREE_TORI:
 									}
 								else
 									{
-										vs[vCount] = [ [ nextArc endVertex ] position ] ;
+										vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
 										ivs[vCount] = [ [ nextArc endVertex ] subsurfaceIndex ] ;
 										
 										[ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(2./3.) usingMolecule:self ] ;
@@ -8492,7 +8479,7 @@ PROCESS_FREE_TORI:
 		
 		
 		 fprintf( outFile, "# Probe positions\n\n@<TRIPOS>MOLECULE\nPROBES\n%4d%4d%4d%4d\nSMALL\nNO_CHARGES\n\n\n@<TRIPOS>ATOM\n",
-				[ allProbes count ], 0, 0, 0 ) ;
+				(int)[ allProbes count ], 0, 0, 0 ) ;
 				
 		NSEnumerator *probeEnumerator = [ allProbes objectEnumerator ] ;
 		SMProbe *nextProbe ;
@@ -8540,9 +8527,8 @@ PROCESS_FREE_TORI:
 	
 - (void) writeMOEGraphicsForAllSaddles
 	{
-		int i ; 
 		
-		unsigned int yellow, red, color ;
+		unsigned int yellow ;
 		
 		yellow = 0xFFFF00 ;
 		
@@ -8786,7 +8772,6 @@ PROCESS_FREE_TORI:
 		
 		// Make axis blue
 		
-		double axisX, axisY, axisZ ;
 		
 		x2 = baseX + 2.*[ [ [ nextArc torusSection ] axis ] X ] ;
 		y2 = baseY + 2.*[ [ [ nextArc torusSection ] axis ] Y ] ;

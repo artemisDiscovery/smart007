@@ -76,6 +76,9 @@
 - (int) subsurface ;
 - (void) setSubsurface:(int) i ;
 
+- (SMProbe *) probe ;
+- (void) setProbe:(SMProbe *)p ;
+
 - (void) contactElementMidPoint:(MMVector3 *)p andNormal:(MMVector3 *)norm forMolecule:(SMMol *)m ;
 - (void) reentrantElementMidPoint:(MMVector3 *)p andNormal:(MMVector3 *)norm forMolecule:(SMMol *)m ;
 - (void) saddleElementMidPoint:(MMVector3 *)p andNormal:(MMVector3 *)norm forMolecule:(SMMol *)m ;

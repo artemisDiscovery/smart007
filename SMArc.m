@@ -638,7 +638,7 @@
 		
 		if( [ parentCycles count ] > 2 )
 			{
-				printf( "WARNING - ARC PARTICIPATES IN %d CYCLES\n", [ parentCycles count ] ) ;
+				printf( "WARNING - ARC PARTICIPATES IN %d CYCLES\n", (int)[ parentCycles count ] ) ;
 			}
 		
 		return ;
@@ -809,7 +809,7 @@
 		// NOTE that in the current implementation this method is ONLY called to compute theta and phi angles for initial saddle edges. 
 		// This information will be used in detecting a vector reversal that may be required in presence of self-intersecting surface
 		
-		if( torusSection == nil ) return ;
+		if( torusSection == nil ) return 0 ;
 		
 		// Compute current phi angle
 		
@@ -821,7 +821,7 @@
 		
 		// Dot in the direction of axis
 		
-		MMVector3 *diff, *axis, *base, *perp, *refR, *refL, *refPerp, *testCross ;
+		MMVector3 *diff, *axis, *base, *perp, *refR, *refL, *refPerp ;
 		
 		failure = 0 ;
 		
@@ -1102,7 +1102,6 @@ SKIP_START:
 		
 		// Sanity check - start and stop positions for arc should be regenerated from phi and theta
 		
-		MMVector3 *pos ;
 		
 		// Start
 		/*
@@ -1152,7 +1151,7 @@ SKIP_END:
 		// This function computes the position of an interior point of an arc, fraction f (0 <= f <= 1) from the start
 		// It will take into account twinning
 		
-		static twinPoint = nil ;
+		static MMVector3 *twinPoint = nil ;
 		
 		if( ! twinPoint )
 			{
@@ -1180,18 +1179,16 @@ SKIP_END:
 - (void) theArcPoint:(MMVector3 *)p atFraction:(double) f usingMolecule:(SMMol *)m
 	{
 		
-		double deltaAngle, endAngle ;
+		double deltaAngle ;
 		
 		double cX, cY, cZ, dx, dy, dz ;
 		
 		
-		int startIndex, endIndex ;
 		
-		MMVector3 *endVector, *startPosition, *endPosition, *nextPos ;
+		MMVector3 *nextPos ;
 		
-		SMVertex *startVertex, *endVertex ;
 		
-		double phi1, theta1, phi2, theta2, deltaTheta, deltaPhi ;
+		double phi1, theta1 ;
 		
 		// Note - use saddle-type subdivision on reentrant arcs (reentrantR and reentrantL) to handle self-intersecting surface
 		
@@ -1276,13 +1273,11 @@ SKIP_END:
 		
 		double dx, dy, dz, dispX, dispY, dispZ ;
 		
-		MMVector3 *probePos, *dispVector ;
 		double saddleRadius ;
 		double probePosX, probePosY, probePosZ ;
 		double perpRefX, perpRefY, perpRefZ ;
 		double thetaRefX, thetaRefY, thetaRefZ ;
 		double dispSaveX, dispSaveY, dispSaveZ ;
-		int atomI, atomJ ;
 		
 		saddleRadius = [ torusSection saddleRadius ] ;
 		
@@ -1300,7 +1295,6 @@ SKIP_END:
 		
 		// Theta reference vector
 		
-		MMVector3 *thetaRef, *perpRef, *tempVec ;
 			
 		thetaRefX = mol->xAtom[ [ torusSection atomI ] ] - probePosX ;
 		thetaRefY = mol->yAtom[ [ torusSection atomI ] ] - probePosY ;
@@ -1344,7 +1338,6 @@ SKIP_END:
 		
 		double probeRadius = mol->probeRadius ;
 		
-		double xN, yN, zN ;
 		BOOL deformed = NO ;
 		
 		if( mol->allowSelfIntersection == YES || torusSection->selfIntersection == NO )
@@ -1609,13 +1602,12 @@ SKIP_END:
 		
 		// In what follows, arc1 is the "self" arc, arc2 is the target
 		
-         double alpha, beta, dotab, dotsa, dotva ;
+         double dotab, dotsa, dotva ;
          double alpha1, beta1, alpha2, beta2, alphamax, betamax ;
-         double a, b, c, d, disc, arg, ang, a1, a2, a3, a4 ;
-         MMVector3 *v, *v2, *t, *s ;
+         double a, b, c, disc, arg, ang, a1, a2, a3, a4 ;
+         MMVector3 *v ;
          short in11, in12, in21, in22 ;
-         double fmin, f11, f12, f21, f22 ; 
-		 static MMVector3 *w = nil, *p = nil ;
+		 static MMVector3 *w = nil ;
 		 double px, py, pz, tx, ty, tz, sx, sy, sz, wx, wy, wz, vx, vy, vz ;
 		 double axis2x, axis2y, axis2z ;
 		 double sUx, sUy, sUz, eUx, eUy, eUz ;

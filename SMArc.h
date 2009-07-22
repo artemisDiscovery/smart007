@@ -105,6 +105,8 @@
 
 - (id) initWithHostCenter:(MMVector3 *)hc radius:(double)hr torusSection:(SMTorus *)ts arcType:(int)at ;
 
+- (id) initWithTorusSection:(SMTorus *)ts molecule:(SMMol *)mol phiStart:(double)phiS thetaStart:(double)thetaS phiEnd:(double)phiE thetaEnd:(double)thetaE ;
+
 - (void) initializeWithArcCenter:(MMVector3 *)ac arcRadius:(double)ar axis:(MMVector3 *)ax start:(MMVector3 *)s end:(MMVector3 *)e hostProbe:(SMProbe *)hp ;
 
 - (id) copyArc ;
@@ -115,6 +117,8 @@
 - (double) angle ;
 
 - (BOOL) skip ;
+
+- (void) reverse ;
 
 - (void) setSkip:(BOOL)s ;
 
@@ -193,5 +197,11 @@
 
 - (void) arcPoint:(MMVector3 *)p atFraction:(double)f usingMolecule:(SMMol *)m ;
 
+- (MMVector3 *) computePositionForTheta:(double)t andPhi:(double)p usingMolecule:(SMMol *)mol allowSelfIntersection:(BOOL)SIFlag normal:(MMVector3 *)norm ;
 
+- (void) theArcPoint:(MMVector3 *)p atFraction:(double) f usingMolecule:(SMMol *)m ;
+
+- (BOOL) withinArc:(MMVector3 *) pos ;
+
+- (BOOL) intersectWith2:(SMArc *)arc2 ;
 @end

@@ -137,15 +137,26 @@
 - (double) computeSaddleTangentAngleUsingArc:(SMArc *) a start:(BOOL) s previousArc:(SMArc *) p
 														previousForward:(BOOL)pf
 														nextArc:(SMArc *)n  nextForward:(BOOL)nf ;
-														
+
+- (SMArc *) buildCircularArcUsingSourcePre:(SMArc *)sourcePreArc sourcePreForward:(BOOL)spf 
+								sourceNext:(SMArc *)sourceNextArc sourceNextForward:(BOOL)snf
+								 targetPre:(SMArc *)targetPreArc targetPreForward:(BOOL)tpf
+								targetNext:(SMArc *)targetNextArc targetNextForward:(BOOL)tnf ;
+
 - (NSArray *)  subdivideCycle:(SMCycle *)cyc firstIndex:(int)first
 					secondIndex:(int)second usingArc:(SMArc *)arc ;
 					
 - (SMCycle *) combineCycle:(SMCycle *)cycleJ firstIndex:(int)startJ withCycle:(SMCycle *)cycleK secondIndex:(int)startK
 				usingArc:(SMArc *)a ;	
-				
-// For debugging
+		
+- (void) cullContactCycles ;
 
+- (void) subdivideArc:(SMArc *)a ;
+- (NSArray *) subdivideTheArc:(SMArc *)a ;
+- (void) subdivideArc:(SMArc *)a usingDivision:(double)div ;
+
+// For debugging
+- (void) probesToMOL2UsingFile:(NSString *)f ;
 - (void) writeMOEGraphicsForArc:(SMArc *)a usingColorIndex:(unsigned int)c andGraphicsObject:(NSString *)g ;
 - (void) writeMOEGraphicsForCycle:(SMCycle *)cyc usingObjectName:(NSString *)name ;
 - (void) writeMOEGraphicsForHistoryOfCycle:(SMCycle *)cyc ;

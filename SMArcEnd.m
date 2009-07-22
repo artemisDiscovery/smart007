@@ -24,7 +24,7 @@
 
 - (BOOL) isEqual:(id)aEnd
 	{
-		if( theArc == [ aEnd arc ]  && start  == [ aEnd start ]  )
+		if( theArc == [ aEnd arc ]  && start  == [ aEnd atStart ]  )
 			{
 				return YES ;
 			}
@@ -32,11 +32,13 @@
 			{
 				return NO ;
 			}
+	
+		return NO ;
 			
 	}
 
 
-- (unsigned) hash
+- (NSUInteger) hash
 	{
 		return [ theArc hash ] ^ [ [ NSNumber numberWithBool:start ] hash ] ;
 	}
@@ -46,7 +48,7 @@
 		return theArc ;
 	}
 	
-- (BOOL) start 
+- (BOOL) atStart 
 	{
 		return start ;
 	}

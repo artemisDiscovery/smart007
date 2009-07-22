@@ -10,6 +10,7 @@
 #import "SMArc.h"
 #import "SMMol.h"
 #import "SMCycle.h"
+#import "SMArcEnd.h"
 
 @implementation SMVertex
 
@@ -117,7 +118,7 @@
 		
 		while( ( nextArcEnd = [ arcEndEnumerator nextObject ] ) )
 			{
-				if( [ nextArcEnd start ] == YES )
+				if( [ nextArcEnd atStart ] == YES )
 					{
 						[ [ nextArcEnd arc ] setStartVertex:self ] ;
 					}
@@ -130,9 +131,9 @@
 		
 		// Average position
 		
-		[ position setX:( [ position X ] + [ [ v position ] X ] )/2. ] ;
-		[ position setY:( [ position Y ] + [ [ v position ] Y ] )/2. ] ;
-		[ position setZ:( [ position Z ] + [ [ v position ] Z ] )/2. ] ;
+		[ position setX:( [ position X ] + [ [ v vertexPosition ] X ] )/2. ] ;
+		[ position setY:( [ position Y ] + [ [ v vertexPosition ] Y ] )/2. ] ;
+		[ position setZ:( [ position Z ] + [ [ v vertexPosition ] Z ] )/2. ] ;
 		
 		// Average normals
 		
@@ -191,7 +192,7 @@
 		
 		double phi, theta ;
 		
-		if( [ theArcEnd start ] == YES )
+		if( [ theArcEnd atStart ] == YES )
 			{
 				phi = [ theArc phiStart ] ;
 				theta = [ theArc thetaStart ] ;
@@ -255,7 +256,7 @@
 							{
 								saddleArc = [ nextArcEnd arc ] ;
 								
-								if( [ nextArcEnd start ] == YES )
+								if( [ nextArcEnd atStart ] == YES )
 									{
 										phi = [ [ nextArcEnd arc ] phiStart ] ;
 										theta = [ [ nextArcEnd arc ] thetaStart ] ;
@@ -285,7 +286,7 @@
 						if( cyc->theLimitPlane && cyc->selfIntersection == YES )
 							{
 								
-								if( [ theArcEnd start ] == YES )
+								if( [ theArcEnd atStart ] == YES )
 									{
 										[ position release ] ;
 										
@@ -306,7 +307,7 @@
 								{
 									[ position release ] ;
 		
-									if( [ theArcEnd start ] == YES )
+									if( [ theArcEnd atStart ] == YES )
 										{
 											position = [ [ MMVector3 alloc ] initUsingVector:[ theArc startPosition ] ] ;
 										}
@@ -347,7 +348,7 @@
 				
 				[ position release ] ;
 				
-				if( [ theArcEnd start ] == YES )
+				if( [ theArcEnd atStart ] == YES )
 					{
 						position = [ [ MMVector3 alloc ] initUsingVector:[ theArc startPosition ] ] ;
 					}
@@ -384,7 +385,7 @@
 		
 		[ position release ] ;
 		
-		if( [ theArcEnd start ] == YES )
+		if( [ theArcEnd atStart ] == YES )
 			{
 				position = [ [ MMVector3 alloc ] initUsingVector:[ theArc startPosition ] ] ;
 			}
@@ -405,7 +406,7 @@
 	}
 		
 		
-- (MMVector3 *)position 
+- (MMVector3 *)vertexPosition 
 	{
 		return position ;
 	}

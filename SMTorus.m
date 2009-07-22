@@ -659,7 +659,7 @@
 	{
 		// See which array parent arc is in
 		
-		int idx ;
+		NSUInteger idx ;
 		
 		if( ( idx = [ contactIArcs indexOfObject:p ] ) != NSNotFound )
 			{
@@ -690,7 +690,7 @@
 		
 		if( p )
 			{
-				int idx ;
+				NSUInteger idx ;
 				
 				idx = [ contactIArcs indexOfObject:p ] ;
 				

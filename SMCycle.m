@@ -203,7 +203,7 @@
 	{
 		// Do this simply using associated atom
 		
-		double xA, yA, zA, d, xMid, yMid, zMid  ;
+		double xA, yA, zA, xMid, yMid, zMid  ;
 		int iAtom ;
 		
 		iAtom = [ [ atoms anyObject ] intValue ] ;
@@ -241,9 +241,9 @@
 		
 		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
-				xMid += [ [ nextVertex position ] X ] - xA ;
-				yMid += [ [ nextVertex position ] Y ] - yA ;
-				zMid += [ [ nextVertex position ] Z ] - zA ;
+				xMid += [ [ nextVertex vertexPosition ] X ] - xA ;
+				yMid += [ [ nextVertex vertexPosition ] Y ] - yA ;
+				zMid += [ [ nextVertex vertexPosition ] Z ] - zA ;
 			}
 			
 		// Midpoint position
@@ -267,7 +267,7 @@
 	{
 		// Do this simply using associated atom
 		
-		double xP, yP, zP, d, xMid, yMid, zMid  ;
+		double xP, yP, zP, xMid, yMid, zMid  ;
 		int iAtom ;
 		
 		iAtom = [ [ atoms anyObject ] intValue ] ;
@@ -305,9 +305,9 @@
 		
 		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
-				xMid += [ [ nextVertex position ] X ] - xP ;
-				yMid += [ [ nextVertex position ] Y ] - yP ;
-				zMid += [ [ nextVertex position ] Z ] - zP ;
+				xMid += [ [ nextVertex vertexPosition ] X ] - xP ;
+				yMid += [ [ nextVertex vertexPosition ] Y ] - yP ;
+				zMid += [ [ nextVertex vertexPosition ] Z ] - zP ;
 			}
 			
 		// Midpoint position
