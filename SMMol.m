@@ -2835,10 +2835,20 @@ PROCESS_FREE_TORI:
 		
 		cycleEnumerator = [ saddleCycles objectEnumerator ] ;
 		
+		NSEnumerator *arcEnumerator ;
+		SMArc *nextArc ;
+		
+		static NSMutableArray *arcsToSubdivide = nil ;
+		
+		if( ! arcsToSubdivide )
+			{
+				arcsToSubdivide = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
+			}
+			
+		
 		while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
 			{
-				NSEnumerator *arcEnumerator ;
-				SMArc *nextArc ;
+				
 				
 				// Note that if we have executed combine cycle operations, some cycles may already be dead
 								
@@ -2851,6 +2861,8 @@ PROCESS_FREE_TORI:
 				// Initially, I will simply verify that each arc is still present in the cycle 
 				
 				arcEnumerator = [ [ nextCycle arcs ] objectEnumerator ] ;
+				
+				[ arcsToSubdivide removeAllObjects ] ;
 				
 				while( ( nextArc = [ arcEnumerator nextObject ] ) )
 					{
@@ -2878,22 +2890,30 @@ PROCESS_FREE_TORI:
 						
 						if( [ [ nextCycle arcs ] indexOfObject:nextArc ] == NSNotFound ) continue ;
 						
-						// Check for a short arc that subtends too big an angle
+						[ arcsToSubdivide addObject:nextArc ] ;
 						
-						if( floor([ nextArc length ] / div ) < 2 )
-							{
-								if( fabs( [ nextArc phiStart ] - [ nextArc phiEnd ] ) > acos(-1.)/2. )
-									{
-										[ self subdivideArc:nextArc ] ;
-									}
-							}
-						else
-							{
-								[ self subdivideArc:nextArc usingDivision:div ] ;
-							}
+						
 					}
 			}
 		
+		arcEnumerator = [ arcsToSubdivide objectEnumerator ] ;
+		
+		while( ( nextArc = [ arcEnumerator nextObject ] ) )
+			{
+				// Check for a short arc that subtends too big an angle
+				
+				if( floor([ nextArc length ] / div ) < 2 )
+					{
+						if( fabs( [ nextArc phiStart ] - [ nextArc phiEnd ] ) > acos(-1.)/2. )
+							{
+								[ self subdivideArc:nextArc ] ;
+							}
+					}
+				else
+					{
+						[ self subdivideArc:nextArc usingDivision:div ] ;
+					}
+			}
 				
 		NSMutableArray *tryArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 		
@@ -4843,12 +4863,22 @@ PROCESS_FREE_TORI:
 		
 		
 		// Start by subdividing all existing arcs
-			cycleEnumerator = [ contactCycles objectEnumerator ] ;
+		
+		NSEnumerator *arcEnumerator ;
+		SMArc *nextArc ;
+		
+		static NSMutableArray *arcsToSubdivide = nil ;
+		
+		if( ! arcsToSubdivide )
+			{
+				arcsToSubdivide = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
+			}
+		
+		cycleEnumerator = [ contactCycles objectEnumerator ] ;
 		
 		while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
 			{
-				NSEnumerator *arcEnumerator ;
-				SMArc *nextArc ;
+				
 				
 				// Note that if we have executed combine cycle operations, some cycles may already be dead
 				
@@ -4860,6 +4890,8 @@ PROCESS_FREE_TORI:
 				// Initially, I will simply verify that each arc is still present in the cycle 
 				
 				arcEnumerator = [ [ nextCycle arcs ] objectEnumerator ] ;
+				
+				[ arcsToSubdivide removeAllObjects ] ;
 				
 				while( ( nextArc = [ arcEnumerator nextObject ] ) )
 					{
@@ -4887,8 +4919,17 @@ PROCESS_FREE_TORI:
 						
 						if( [ [ nextCycle arcs ] indexOfObject:nextArc ] == NSNotFound ) continue ;
 						
-						[ self subdivideArc:nextArc usingDivision:div ] ;
+						[ arcsToSubdivide addObject:nextArc ] ;
+						
+						//[ self subdivideArc:nextArc usingDivision:div ] ;
 					}
+			}
+		
+		arcEnumerator = [ arcsToSubdivide objectEnumerator ] ;
+		
+		while( ( nextArc = [ arcEnumerator nextObject ] ) )
+			{
+				[ self subdivideArc:nextArc usingDivision:div ] ;
 			}
 		
 		NSMutableArray *tryArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
@@ -4962,14 +5003,21 @@ PROCESS_FREE_TORI:
 								continue ;
 							}
 						
+						int iArc ;
+						
 						if( MNoSkip == 2 )
 							{
 								// Subdivide both available arcs
 								
-								arcEnumerator = [ cycleArcs objectEnumerator ] ;
+								//arcEnumerator = [ cycleArcs objectEnumerator ] ;
 								
-								while( ( nextArc = [ arcEnumerator nextObject ] ) )
+								int initialCount = [ cycleArcs count ] ;
+								
+								for( iArc = 0 ; iArc < initialCount ; ++iArc )
+								//while( ( nextArc = [ arcEnumerator nextObject ] ) )
 									{
+										nextArc = [ cycleArcs objectAtIndex:iArc ] ;
+										
 										if( [ nextArc skip ] == NO )
 											{
 												[ self subdivideArc:nextArc ] ;
@@ -5357,10 +5405,20 @@ PROCESS_FREE_TORI:
 		
 		cycleEnumerator = [ reentrantCycles objectEnumerator ] ;
 		
+		static NSMutableArray *arcsToSubdivide = nil ;
+		
+		if( ! arcsToSubdivide )
+			{
+				arcsToSubdivide = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
+			}
+		
+		NSEnumerator *arcEnumerator ;
+		SMArc *nextArc ;
+		
 		while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
 			{
-				NSEnumerator *arcEnumerator ;
-				SMArc *nextArc ;
+				
+				[ arcsToSubdivide removeAllObjects ] ;
 				
 				arcEnumerator = [ [ nextCycle arcs ] objectEnumerator ] ;
 				
@@ -5386,8 +5444,17 @@ PROCESS_FREE_TORI:
 							
 						if( skip == YES ) continue ;
 						
-						[ self subdivideArc:nextArc usingDivision:div ] ;
+						[ arcsToSubdivide addObject:nextArc ] ;
+						
+						//[ self subdivideArc:nextArc usingDivision:div ] ;
 					}
+			}
+		
+		arcEnumerator = [ arcsToSubdivide objectEnumerator ] ;
+		
+		while( ( nextArc = [ arcEnumerator nextObject ] ) )
+			{
+				[ self subdivideArc:nextArc usingDivision:div ] ;
 			}
 		
 		NSMutableArray *tryArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
