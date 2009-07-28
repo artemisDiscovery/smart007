@@ -6,7 +6,7 @@
 //  Copyright 2007 __MyCompanyName__. All rights reserved.
 //
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 #import "vector3.h"
 #import "SMProbe.h"
 #import "SMVertex.h"
@@ -105,9 +105,9 @@
 
 - (id) initWithHostCenter:(MMVector3 *)hc radius:(double)hr torusSection:(SMTorus *)ts arcType:(int)at ;
 
-- (id) initWithTorusSection:(SMTorus *)ts molecule:(SMMol *)mol phiStart:(double)phiS thetaStart:(double)thetaS phiEnd:(double)phiE thetaEnd:(double)thetaE ;
-
 - (void) initializeWithArcCenter:(MMVector3 *)ac arcRadius:(double)ar axis:(MMVector3 *)ax start:(MMVector3 *)s end:(MMVector3 *)e hostProbe:(SMProbe *)hp ;
+
+- (id) initWithTorusSection:(SMTorus *)ts molecule:(SMMol *)mol phiStart:(double)phiS thetaStart:(double)thetaS phiEnd:(double)phiE thetaEnd:(double)thetaE ;
 
 - (id) copyArc ;
 
@@ -116,9 +116,9 @@
 - (double) length ;
 - (double) angle ;
 
-- (BOOL) skip ;
-
 - (void) reverse ;
+
+- (BOOL) skip ;
 
 - (void) setSkip:(BOOL)s ;
 
@@ -134,6 +134,7 @@
 - (int) arcType ;
 
 - (BOOL) intersectWith:(SMArc *)t ;
+- (BOOL) intersectWith2:(SMArc *)arc2 ;
 
 - (void) setStartVertex: (SMVertex *)s ;
 - (void) setEndVertex: (SMVertex *)e ;
@@ -193,15 +194,14 @@
 - (NSMutableArray *) startConnectStart ;
 - (NSMutableArray *) endConnectStart ;
 
+- (BOOL) withinArc:(MMVector3 *) pos ;
+
 - (void) addConnectionToArc:(SMArc *)a ;
 
 - (void) arcPoint:(MMVector3 *)p atFraction:(double)f usingMolecule:(SMMol *)m ;
 
 - (MMVector3 *) computePositionForTheta:(double)t andPhi:(double)p usingMolecule:(SMMol *)mol allowSelfIntersection:(BOOL)SIFlag normal:(MMVector3 *)norm ;
-
+ 
 - (void) theArcPoint:(MMVector3 *)p atFraction:(double) f usingMolecule:(SMMol *)m ;
 
-- (BOOL) withinArc:(MMVector3 *) pos ;
-
-- (BOOL) intersectWith2:(SMArc *)arc2 ;
 @end

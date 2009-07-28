@@ -6,7 +6,7 @@
 //  Copyright 2007 __MyCompanyName__. All rights reserved.
 //
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 #import "SMLimitPlane.h"
 
 @class SMArc ;
@@ -73,11 +73,11 @@
 
 - (void) setAtoms:(NSSet *)s ;
 
-- (int) subsurface ;
-- (void) setSubsurface:(int) i ;
-
 - (SMProbe *) probe ;
 - (void) setProbe:(SMProbe *)p ;
+
+- (int) subsurface ;
+- (void) setSubsurface:(int) i ;
 
 - (void) contactElementMidPoint:(MMVector3 *)p andNormal:(MMVector3 *)norm forMolecule:(SMMol *)m ;
 - (void) reentrantElementMidPoint:(MMVector3 *)p andNormal:(MMVector3 *)norm forMolecule:(SMMol *)m ;

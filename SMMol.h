@@ -6,7 +6,7 @@
 //  Copyright 2007 __MyCompanyName__. All rights reserved.
 //
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 #import "vector3.h"
 //#import "SMProbe.h"
 //#import "SMTorus.h"
@@ -127,6 +127,14 @@
 - (double) computeTangentAngleUsingArc:(SMArc *) a start:(BOOL) s previousArc:(SMArc *) p previousForward:(BOOL)pf
 			nextArc:(SMArc *)n nextForward:(BOOL)nf reentrantRegion:(BOOL)reent ;
 
+- (SMArc *) buildCircularArcUsingSourcePre:(SMArc *)sourcePreArc sourcePreForward:(BOOL)spf 
+				sourceNext:(SMArc *)sourceNextArc sourceNextForward:(BOOL)snf
+				targetPre:(SMArc *)targetPreArc targetPreForward:(BOOL)tpf
+				targetNext:(SMArc *)targetNextArc targetNextForward:(BOOL)tnf ;
+
+- (SMArc *) buildCircularArcUsingHostCenter:(MMVector3 *)hc hostRadius:(double)hr start:(MMVector3 *)v1 
+					end:(MMVector3 *)v2 startTangent:(MMVector3 *)t ;
+					
 - (SMArc *) buildGeoUsingStart:(SMArc *)sourceArc startForward:(BOOL)sf end:(SMArc *)targetArc endForward:(BOOL)ef reentrantRegion:(BOOL)reent ;
 
 - (SMArc *) buildSaddleUsingStart:(SMArc *)sourceArc 
@@ -137,26 +145,20 @@
 - (double) computeSaddleTangentAngleUsingArc:(SMArc *) a start:(BOOL) s previousArc:(SMArc *) p
 														previousForward:(BOOL)pf
 														nextArc:(SMArc *)n  nextForward:(BOOL)nf ;
-
-- (SMArc *) buildCircularArcUsingSourcePre:(SMArc *)sourcePreArc sourcePreForward:(BOOL)spf 
-								sourceNext:(SMArc *)sourceNextArc sourceNextForward:(BOOL)snf
-								 targetPre:(SMArc *)targetPreArc targetPreForward:(BOOL)tpf
-								targetNext:(SMArc *)targetNextArc targetNextForward:(BOOL)tnf ;
-
+														
 - (NSArray *)  subdivideCycle:(SMCycle *)cyc firstIndex:(int)first
 					secondIndex:(int)second usingArc:(SMArc *)arc ;
 					
 - (SMCycle *) combineCycle:(SMCycle *)cycleJ firstIndex:(int)startJ withCycle:(SMCycle *)cycleK secondIndex:(int)startK
 				usingArc:(SMArc *)a ;	
-		
-- (void) cullContactCycles ;
-
+				
 - (void) subdivideArc:(SMArc *)a ;
-- (NSArray *) subdivideTheArc:(SMArc *)a ;
 - (void) subdivideArc:(SMArc *)a usingDivision:(double)div ;
-
+- (NSArray *) subdivideTheArc:(SMArc *)a ;
+- (NSArray *) subdivideTheArc:(SMArc *)a usingDivision:(double) div ;
+				
 // For debugging
-- (void) probesToMOL2UsingFile:(NSString *)f ;
+
 - (void) writeMOEGraphicsForArc:(SMArc *)a usingColorIndex:(unsigned int)c andGraphicsObject:(NSString *)g ;
 - (void) writeMOEGraphicsForCycle:(SMCycle *)cyc usingObjectName:(NSString *)name ;
 - (void) writeMOEGraphicsForHistoryOfCycle:(SMCycle *)cyc ;

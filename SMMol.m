@@ -989,6 +989,7 @@
 				
 				// To check for free torus
 				
+
 				
 				int nTest ;
 				
@@ -1316,7 +1317,7 @@
 						if( warningLevel <= 1 )
 							{
 								printf( "WARNING: ATOM TRIPLE %d %d %d SUPPORTS %d PROBES!\n", 
-									atomI, atomJ, atomK, (int)[ probeArray count ] ) ;
+									atomI, atomJ, atomK, [ probeArray count ] ) ;
 							}
 					}
 			}
@@ -1462,7 +1463,7 @@
 				if( ! firstRightProbe )
 					{
 						printf( "IN FUNCTION generateTori, ATOM PAIR %d - %d SUPPORTS %d PROBES BUT NO PROBE WITH RIGHT-HAND COLLISION - Exit!\n",
-							iAtom, jAtom, (int)[ probesForTorus count ] ) ;
+							iAtom, jAtom, [ probesForTorus count ] ) ;
 							
 						exit(1) ;
 					}
@@ -2054,7 +2055,7 @@ PROCESS_FREE_TORI:
 
 		
 			
-		printf( "\nGenerated %d contact cycles ...\n", (int)[ contactCycles count ] ) ;
+		printf( "\nGenerated %d contact cycles ...\n", [ contactCycles count ] ) ;
 		
 		return ;
 	}
@@ -2226,6 +2227,7 @@ PROCESS_FREE_TORI:
 		
 		int currentTorusIndex = 0 ;
 		
+
 		
 		SMTorus *currentTorus = tori[currentTorusIndex] ;
 		
@@ -2504,7 +2506,7 @@ PROCESS_FREE_TORI:
 					}
 			}
 			
-		printf( "\nGenerated %d reentrant cycles ...\n", (int)[ reentrantCycles count ] ) ;
+		printf( "\nGenerated %d reentrant cycles ...\n", [ reentrantCycles count ] ) ;
 		
 		if( rh == NO ) return ;
 		
@@ -2835,34 +2837,31 @@ PROCESS_FREE_TORI:
 		
 		cycleEnumerator = [ saddleCycles objectEnumerator ] ;
 		
-		NSEnumerator *arcEnumerator ;
-		SMArc *nextArc ;
-		
+		NSMutableArray *tempArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 		
 		while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
 			{
-				
+				NSEnumerator *arcEnumerator ;
+				SMArc *nextArc ;
 				
 				// Note that if we have executed combine cycle operations, some cycles may already be dead
 								
 					
 				if( [ nextCycle active ] == NO  ) continue ;
 				
+				[ tempArcs removeAllObjects ] ;
+				[ tempArcs addObjectsFromArray:[ nextCycle arcs ] ] ;
+				
 				// Need some extra care in this seemingly simple operation. If contact cycles have been combined into one, we will have an arc
 				// AND IT'S TWIN in the same cycle! When one of the pair is encountered, an arc will be removed from the cycle. 
 				
 				// Initially, I will simply verify that each arc is still present in the cycle 
 				
-				int initialCount = [ [ nextCycle arcs ] count ] ;
-			
-				int iArc ;
-								
-				//while( ( nextArc = [ arcEnumerator nextObject ] ) )
-				for( iArc = 0 ; iArc < initialCount ; ++iArc )
+				arcEnumerator = [ tempArcs objectEnumerator ] ;
+				
+				while( ( nextArc = [ arcEnumerator nextObject ] ) )
 					{
-						// Check for no parent cycle > nextCycle
-					
-						nextArc = [ [ nextCycle arcs ] objectAtIndex:iArc ] ;
+						// Check for no parent cycle > nextCycle 
 						
 						BOOL skip ;
 						NSEnumerator *parentCycleEnumerator ;
@@ -2886,6 +2885,8 @@ PROCESS_FREE_TORI:
 						
 						if( [ [ nextCycle arcs ] indexOfObject:nextArc ] == NSNotFound ) continue ;
 						
+						// Check for a short arc that subtends too big an angle
+						
 						if( floor([ nextArc length ] / div ) < 2 )
 							{
 								if( fabs( [ nextArc phiStart ] - [ nextArc phiEnd ] ) > acos(-1.)/2. )
@@ -2897,12 +2898,11 @@ PROCESS_FREE_TORI:
 							{
 								[ self subdivideArc:nextArc usingDivision:div ] ;
 							}
-					
-						
-						
 					}
 			}
-						
+		
+		[ tempArcs release ] ;
+		
 		NSMutableArray *tryArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 		
 #ifdef SURFDEBUG
@@ -3271,8 +3271,8 @@ PROCESS_FREE_TORI:
 									
 								//DEBUGING - did we generate a cycle with all theta = 0 ?
 								
-								BOOL thetaNotZero ;
-								
+							
+
 								
 								/*
 								subArcEnumerator = [ [ [ subCycles objectAtIndex:0 ] arcs ] objectEnumerator ] ;
@@ -3945,6 +3945,7 @@ PROCESS_FREE_TORI:
 		NSMutableSet *boundaryElements = [ [ NSMutableSet alloc ] initWithCapacity:nElements  ] ;
 		
 		
+		
 		// First vertex should be unassigned
 		
 		SMVertex *nextUnassignedVertex = [ vertices objectAtIndex:0 ] ;
@@ -4113,7 +4114,7 @@ PROCESS_FREE_TORI:
 									{
 										if( ![ nextArc torusSection ] || [ [ nextArc torusSection ] freeTorus ] != YES || [ nextArc twin ] == nil )
 											{
-												printf( "ARC %p HAS %d PARENT CYCLES!\n", nextArc, (int)[ [ nextArc parentCycles ] count ] ) ;
+												printf( "ARC %p HAS %d PARENT CYCLES!\n", nextArc, [ [ nextArc parentCycles ] count ] ) ;
 												hadError = YES ;
 											}
 									}
@@ -4161,7 +4162,7 @@ PROCESS_FREE_TORI:
 		
 		if( [ checkVertices count ] > 0 )
 			{
-				printf( "WARNING: %d UNUSED VERTICES!\n", (int)[ checkVertices count ] ) ;
+				printf( "WARNING: %d UNUSED VERTICES!\n", [ checkVertices count ] ) ;
 				hadError = YES ;
 			}
 			
@@ -4284,6 +4285,7 @@ PROCESS_FREE_TORI:
 												// Try to build arc from arcs of cycle j to any of the arcs
 												// of cycle k. Tangent and intersection tests are applied.
 												
+
 												int M ;
 										
 												SMCycle *cycleK ;
@@ -4852,33 +4854,31 @@ PROCESS_FREE_TORI:
 		
 		// Start by subdividing all existing arcs
 		
-		NSEnumerator *arcEnumerator ;
-		SMArc *nextArc ;
-		
-		
 		cycleEnumerator = [ contactCycles objectEnumerator ] ;
-	
+		
+		NSMutableArray *tempArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
+		
 		while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
 			{
+				NSEnumerator *arcEnumerator ;
+				SMArc *nextArc ;
 				
 				// Note that if we have executed combine cycle operations, some cycles may already be dead
 				
 				if( [ nextCycle active ] == NO ) continue ;
+				
+				[ tempArcs removeAllObjects ] ;
+				[ tempArcs addObjectsFromArray:[ nextCycle arcs ] ] ;
 				
 				// Need some extra care in this seemingly simple operation. If contact cycles have been combined into one, we will have an arc
 				// AND IT'S TWIN in the same cycle! When one of the pair is encountered, an arc will be removed from the cycle. 
 				
 				// Initially, I will simply verify that each arc is still present in the cycle 
 				
-				int initialCount, iArc ;
-			
-				initialCount = [ [ nextCycle arcs ] count ] ;
+				arcEnumerator = [ tempArcs objectEnumerator ] ;
 				
-				//while( ( nextArc = [ arcEnumerator nextObject ] ) )
-				for( iArc = 0 ; iArc < initialCount ; ++iArc )
+				while( ( nextArc = [ arcEnumerator nextObject ] ) )
 					{
-						nextArc = [ [ nextCycle arcs ] objectAtIndex:iArc ] ;
-					
 						// Check for no parent cycle > nextCycle 
 						
 						BOOL skip ;
@@ -4906,7 +4906,7 @@ PROCESS_FREE_TORI:
 						[ self subdivideArc:nextArc usingDivision:div ] ;
 					}
 			}
-		
+			
 		
 		NSMutableArray *tryArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 		
@@ -4979,20 +4979,18 @@ PROCESS_FREE_TORI:
 								continue ;
 							}
 						
-						int iArc ;
-						
 						if( MNoSkip == 2 )
 							{
 								// Subdivide both available arcs
 								
-								//arcEnumerator = [ cycleArcs objectEnumerator ] ;
+								[ tempArcs removeAllObjects ] ;
+								[ tempArcs addObjectsFromArray:cycleArcs ] ;
 								
-								int initialCount = [ cycleArcs count ] ;
+								arcEnumerator = [ tempArcs objectEnumerator ] ;
 								
-								for( iArc = 0 ; iArc < initialCount ; ++iArc )
-								//while( ( nextArc = [ arcEnumerator nextObject ] ) )
+								
+								while( ( nextArc = [ arcEnumerator nextObject ] ) )
 									{
-										nextArc = [ cycleArcs objectAtIndex:iArc ] ;
 										
 										if( [ nextArc skip ] == NO )
 											{
@@ -5318,7 +5316,8 @@ PROCESS_FREE_TORI:
 #endif
 			}
 			
-			
+		[ tempArcs release ] ;
+		
 		return hadReduction ;
 	}
 								
@@ -5377,27 +5376,30 @@ PROCESS_FREE_TORI:
 		BOOL hadReduction = NO ;
 		
 		
+		
+		
 		// Start by subdividing all existing arcs
 		
 		cycleEnumerator = [ reentrantCycles objectEnumerator ] ;
 		
-	
-		NSEnumerator *arcEnumerator ;
-		SMArc *nextArc ;
+		NSMutableArray *tempArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 		
 		while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
 			{
-				int initialCount, iArc ;
-			
-				initialCount = [ [ nextCycle arcs ] count ] ;
+				// Need a temporary copy of the arcs array of the next cycle
 				
-				//while( ( nextArc = [ arcEnumerator nextObject ] ) )
-				for( iArc = 0 ; iArc < initialCount ; ++iArc )
+				[ tempArcs removeAllObjects ] ;
+				[ tempArcs addObjectsFromArray:[ nextCycle arcs ] ] ;
+				
+				NSEnumerator *arcEnumerator ;
+				SMArc *nextArc ;
+				
+				arcEnumerator = [ tempArcs objectEnumerator ] ;
+				
+				while( ( nextArc = [ arcEnumerator nextObject ] ) )
 					{
 						// Check for no parent cycle > nextCycle 
 						
-						nextArc = [ [ nextCycle arcs ] objectAtIndex:iArc ] ;
-					
 						BOOL skip ;
 						NSEnumerator *parentCycleEnumerator ;
 						SMCycle *nextParentCycle ;
@@ -5416,10 +5418,15 @@ PROCESS_FREE_TORI:
 							
 						if( skip == YES ) continue ;
 						
+						// Make sure the arc is still there!
+						
+						if( [ [ nextCycle arcs ] indexOfObject:nextArc ] == NSNotFound ) continue ;
+						
 						[ self subdivideArc:nextArc usingDivision:div ] ;
 					}
 			}
-		
+			
+		[ tempArcs release ] ;
 		
 		NSMutableArray *tryArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 		
@@ -5831,6 +5838,7 @@ PROCESS_FREE_TORI:
 		
 		minAngle = acos(-1.) ;
 		
+
 		
 		MMVector3 *testCross ;
 		double dot, dot2 ;
@@ -6736,6 +6744,7 @@ PROCESS_FREE_TORI:
 		double deltaAngle, endAngle ;
 		
 		int nDiv, iDiv ;
+		
 		
 		MMVector3 *endVector, *startU, *endU ;
 		
@@ -7912,9 +7921,11 @@ PROCESS_FREE_TORI:
 		MMVector3 *pMid, *norm ;
 
 		
+		
 		MMVector3 *vs[3] ;
 		int ivs[3], vCount ;
 		
+		double dx12, dy12, dz12 ;
 		
 			
 				
@@ -8128,7 +8139,7 @@ PROCESS_FREE_TORI:
 		
 		// First, sort subsurfaces by size, which we will do crudely as # vertices
 		
-		typedef struct { int subsurfaceName ; int subsurfaceSize ; int contactElems ; int reentrantElems ; int saddleElems ; FILE *outFile } subsurfaceData ;
+		typedef struct { int subsurfaceName ; int subsurfaceSize ; int contactElems ; int reentrantElems ; int saddleElems ; FILE *outFile ; } subsurfaceData ;
 
 		subsurfaceData *subsurfaceInfo = (subsurfaceData *) malloc( nSubsurfaces * sizeof( subsurfaceData ) ) ;
 		
@@ -8510,7 +8521,7 @@ PROCESS_FREE_TORI:
 		
 		
 		 fprintf( outFile, "# Probe positions\n\n@<TRIPOS>MOLECULE\nPROBES\n%4d%4d%4d%4d\nSMALL\nNO_CHARGES\n\n\n@<TRIPOS>ATOM\n",
-				(int)[ allProbes count ], 0, 0, 0 ) ;
+				[ allProbes count ], 0, 0, 0 ) ;
 				
 		NSEnumerator *probeEnumerator = [ allProbes objectEnumerator ] ;
 		SMProbe *nextProbe ;
@@ -8558,6 +8569,7 @@ PROCESS_FREE_TORI:
 	
 - (void) writeMOEGraphicsForAllSaddles
 	{
+
 		
 		unsigned int yellow ;
 		
@@ -8803,7 +8815,7 @@ PROCESS_FREE_TORI:
 		
 		// Make axis blue
 		
-		
+				
 		x2 = baseX + 2.*[ [ [ nextArc torusSection ] axis ] X ] ;
 		y2 = baseY + 2.*[ [ [ nextArc torusSection ] axis ] Y ] ;
 		z2 = baseZ + 2.*[ [ [ nextArc torusSection ] axis ] Z ] ;
