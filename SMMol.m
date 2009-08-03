@@ -3512,6 +3512,11 @@ PROCESS_FREE_TORI:
 										nextVertex = [ nextArc endVertex ] ;
 									}
 									
+								if( nextVertex && nextVertex->mergedInto )
+									{
+										nextVertex = nextVertex->mergedInto ;
+									}
+											
 								if( preForward == YES )
 									{
 										preVertex = [ preArc endVertex ] ;
@@ -3519,6 +3524,11 @@ PROCESS_FREE_TORI:
 								else
 									{
 										preVertex = [ preArc startVertex ] ;
+									}
+									
+								if( preVertex && preVertex->mergedInto )
+									{
+										preVertex = preVertex->mergedInto ;
 									}
 								
 								if( nextVertex )
@@ -3530,7 +3540,9 @@ PROCESS_FREE_TORI:
 														// Keep the nextVertex
 														
 														[ nextVertex mergeVertex:preVertex ] ;
-														[ vertices removeObject:preVertex ] ;
+														
+														// The offending line!!
+														//[ vertices removeObject:preVertex ] ;
 														
 														keepVertex = nextVertex ;
 													}
@@ -3773,7 +3785,7 @@ PROCESS_FREE_TORI:
 								[ [ nextArc startVertex ] mergeVertex:[ [ nextArc twin ] endVertex ] ] ;
 								//printf( "Merge twin end vertex %p with start vertex %p\n", toRemove, [ nextArc startVertex ] ) ;
 								
-								[ vertices removeObject:toRemove ] ;
+								//[ vertices removeObject:toRemove ] ;
 								//printf( "Remove twin end vertex %p\n", toRemove ) ;
 							}
 							
@@ -3786,7 +3798,7 @@ PROCESS_FREE_TORI:
 								[ [ nextArc endVertex ] mergeVertex:[ [ nextArc twin ] startVertex ] ] ;
 								//printf( "Merge twin start vertex %p with end vertex %p\n", toRemove, [ nextArc endVertex ] ) ;
 								
-								[ vertices removeObject:toRemove ] ;
+								//[ vertices removeObject:toRemove ] ;
 								//printf( "Remove twin start vertex %p\n", toRemove ) ;
 							}
 					}
@@ -3813,6 +3825,11 @@ PROCESS_FREE_TORI:
 		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
 			
+				if( nextVertex->mergedInto ) 
+					{
+						continue ;
+					}
+					
 				// Check if any vertex has illegal position - bail out if so
 				
 				MMVector3 *nextVertexPos ;
@@ -3946,11 +3963,25 @@ PROCESS_FREE_TORI:
 		
 		
 		
-		// First vertex should be unassigned
+		// Find first unmerged vertex - it will also be the first unassigned vertex
 		
-		SMVertex *nextUnassignedVertex = [ vertices objectAtIndex:0 ] ;
+		vertexEnumerator = [ vertices objectEnumerator ] ;
 		
+		SMVertex *nextUnassignedVertex = nil ;
 		
+		while( ( nextUnassignedVertex = [ vertexEnumerator nextObject ] ) )
+			{
+				if( ! nextUnassignedVertex->mergedInto )
+					{
+						break ;
+					}
+			}
+		
+		if( ! nextUnassignedVertex )
+			{
+				printf( "FATAL ERROR - COULD NOT GENERATE VERTICES - NO UNMERGED VERTEX - Exit!\n" ) ;
+				exit(1) ;
+			}
 		
 		
 		while( nextUnassignedVertex )
@@ -4027,14 +4058,13 @@ PROCESS_FREE_TORI:
 					
 				// Now see if there are unassigned vertices
 				
-				NSEnumerator *vertexEnumerator = [ vertices objectEnumerator ] ;
-				SMVertex *nextVertex ;
+				vertexEnumerator = [ vertices objectEnumerator ] ;
 				
 				nextUnassignedVertex = nil ;
 				
 				while( ( nextVertex = [ vertexEnumerator nextObject ]  ) )
 					{
-						if( [ nextVertex subsurface ] < 0 )
+						if( ( ! nextVertex->mergedInto ) && [ nextVertex subsurface ] < 0 )
 							{
 								nextUnassignedVertex = nextVertex ;
 								break ;
@@ -7296,11 +7326,18 @@ PROCESS_FREE_TORI:
 			
 		int i, j ;
 		
-		for( i = 0 ; i < nVertices ; ++i )
+		NSEnumerator *vertexEnumerator = [ vertices objectEnumerator ] ;
+		SMVertex *nextVertex ;
+		
+		int vertexCount = 0 ;
+		
+		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
+				if( nextVertex->mergedInto ) continue ;
+				
 				fprintf( output, "%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", 
-					[ [ [ vertices objectAtIndex:i ] vertexPosition ] X ], [ [ [ vertices objectAtIndex:i ] vertexPosition ] Y ], [ [ [ vertices objectAtIndex:i ] vertexPosition ] Z ],
-					[ [ [ vertices objectAtIndex:i ] normal ] X ], [ [ [ vertices objectAtIndex:i ] normal ] Y ], [ [ [ vertices objectAtIndex:i ] normal ] Z ] ) ;
+					[ [ nextVertex vertexPosition ] X ], [ [ nextVertex vertexPosition ] Y ], [ [ nextVertex vertexPosition ] Z ],
+					[ [ nextVertex normal ] X ], [ [ nextVertex normal ] Y ], [ [ nextVertex normal ] Z ] ) ;
 			}
 			
 		NSEnumerator *cycleEnumerator, *arcEnumerator, *forwardEnumerator ;
@@ -7513,9 +7550,13 @@ PROCESS_FREE_TORI:
 				subsurfaceInfo[i].subsurfaceSize = 0 ;
 			}
 		
-		for( i = 0 ; i < nVertices ; ++i )
+		vertexEnumerator = [ vertices objectEnumerator ] ;
+		
+		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
-				int nextSubsurface = [ [ vertices objectAtIndex:i ] subsurface ] ;
+				if( nextVertex->mergedInto ) continue ;
+				
+				int nextSubsurface = [ nextVertex subsurface ] ;
 				
 				++subsurfaceInfo[nextSubsurface].subsurfaceSize ;
 				
@@ -7594,10 +7635,13 @@ PROCESS_FREE_TORI:
 				[ subsurfaceRankToVertices addObject:[ [ NSMutableArray alloc ] initWithCapacity:subsurfaceInfo[i].subsurfaceSize ] ] ;
 			}
 			
-		for( i = 0 ; i < nVertices ; ++i )
+		vertexEnumerator = [ vertices objectEnumerator ] ;
+		
+		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
 				int rank ;
-				SMVertex *nextVertex = [ vertices objectAtIndex:i ] ;
+				
+				if( nextVertex->mergedInto ) continue ;
 				
 				rank = subsurfaceNameToRank[ [ nextVertex subsurface ] ] ;
 				
@@ -7905,11 +7949,17 @@ PROCESS_FREE_TORI:
 		
 		int i, j ;
 		
-		for( i = 0 ; i < nVertices ; ++i )
+		NSEnumerator *vertexEnumerator = [ vertices objectEnumerator ] ;
+		SMVertex *nextVertex ;
+		
+
+		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
+				if( nextVertex->mergedInto ) continue ;
+				
 				fprintf( output, "%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", 
-					[ [ [ vertices objectAtIndex:i ] vertexPosition ] X ], [ [ [ vertices objectAtIndex:i ] vertexPosition ] Y ], [ [ [ vertices objectAtIndex:i ] vertexPosition ] Z ],
-					[ [ [ vertices objectAtIndex:i ] normal ] X ], [ [ [ vertices objectAtIndex:i ] normal ] Y ], [ [ [ vertices objectAtIndex:i ] normal ] Z ] ) ;
+					[ [ nextVertex vertexPosition ] X ], [ [ nextVertex vertexPosition ] Y ], [ [ nextVertex vertexPosition ] Z ],
+					[ [ nextVertex normal ] X ], [ [ nextVertex normal ] Y ], [ [ nextVertex normal ] Z ] ) ;
 			}
 			
 		NSEnumerator *cycleEnumerator, *arcEnumerator, *forwardEnumerator ;
@@ -8152,8 +8202,12 @@ PROCESS_FREE_TORI:
 				subsurfaceInfo[i].subsurfaceSize = 0 ;
 			}
 		
-		for( i = 0 ; i < nVertices ; ++i )
+		vertexEnumerator = [ vertices objectEnumerator ] ;
+		
+		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
+				if( nextVertex->mergedInto ) continue ;
+				
 				int nextSubsurface = [ [ vertices objectAtIndex:i ] subsurface ] ;
 				
 				++subsurfaceInfo[nextSubsurface].subsurfaceSize ;
@@ -8233,10 +8287,13 @@ PROCESS_FREE_TORI:
 				[ subsurfaceRankToVertices addObject:[ [ NSMutableArray alloc ] initWithCapacity:subsurfaceInfo[i].subsurfaceSize ] ] ;
 			}
 			
-		for( i = 0 ; i < nVertices ; ++i )
+		vertexEnumerator = [ vertices objectEnumerator ] ;
+		
+		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
 			{
 				int rank ;
-				SMVertex *nextVertex = [ vertices objectAtIndex:i ] ;
+				
+				if( nextVertex->mergedInto ) continue ;
 				
 				rank = subsurfaceNameToRank[ [ nextVertex subsurface ] ] ;
 				

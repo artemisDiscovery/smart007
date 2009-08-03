@@ -19,6 +19,7 @@
 
 @interface SMVertex : NSObject
 {
+@public
 	NSMutableSet *arcEnds ;
 	
 	MMVector3 *position ;
@@ -30,6 +31,8 @@
 	int index ;
 	
 	NSMutableArray *mergeVertices ;
+	
+	SMVertex *mergedInto ;
 	
 	int oldIndex ;
 

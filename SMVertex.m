@@ -29,6 +29,8 @@
 		
 		oldIndex = -1 ;
 		
+		mergedInto = nil ;
+		
 		index = -1 ;
 		
 		subsurface = -1 ;
@@ -91,8 +93,18 @@
 			}
 		else
 			{
-				[ mergeVertices addObject:(v->mergeVertices) ] ;
+				[ mergeVertices addObjectsFromArray:(v->mergeVertices) ] ;
 			}
+		
+		NSEnumerator *vertexEnumerator = [ mergeVertices objectEnumerator ] ;
+		SMVertex *nextVertex ;
+		
+		while( ( nextVertex = [ vertexEnumerator nextObject ] ) )
+			{
+				nextVertex->mergedInto = self ;
+			}
+			
+		v->mergedInto = self ;
 		
 		[ arcEnds unionSet:[ v arcEnds ] ] ;
 		
