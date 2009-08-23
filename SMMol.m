@@ -8208,7 +8208,7 @@ PROCESS_FREE_TORI:
 			{
 				if( nextVertex->mergedInto ) continue ;
 				
-				int nextSubsurface = [ [ vertices objectAtIndex:i ] subsurface ] ;
+				int nextSubsurface = [ nextVertex subsurface ] ;
 				
 				++subsurfaceInfo[nextSubsurface].subsurfaceSize ;
 				
@@ -8504,8 +8504,6 @@ PROCESS_FREE_TORI:
 						fprintf( outFile, "%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f MPNT NORM\n",
 							[ pMid X ], [ pMid Y ], [ pMid Z ], [ norm X ], [ norm Y ], [ norm Z ] ) ;
 							
-						fprintf( outFile, " MP NM\n" ) ;
-						
 						if( iPhase == 2 )
 							{
 								fprintf( outFile, "%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f P11 P12\n", 
