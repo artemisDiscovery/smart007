@@ -332,21 +332,21 @@
 		
 		if( theLimitPlane && selfIntersection == YES )
 			{
-				didAdjust = [ theLimitPlane adjustPosition:p ] ;
+				didAdjust = [ theLimitPlane adjustPosition:p andNormal:norm ] ;
 			}
 		
 		if( didAdjust == YES )
 			{
 				// Use normal from limitplane
 				
-				[ norm setX:( [ theLimitPlane->planeNormal X ] ) ] ;
-				[ norm setY:( [ theLimitPlane->planeNormal Y ] ) ] ;
-				[ norm setZ:( [ theLimitPlane->planeNormal Z ] ) ] ;
+				//[ norm setX:( [ theLimitPlane->planeNormal X ] ) ] ;
+				//[ norm setY:( [ theLimitPlane->planeNormal Y ] ) ] ;
+				//[ norm setZ:( [ theLimitPlane->planeNormal Z ] ) ] ;
 			}
 		else
 			{
 				
-				// Need to reverse normal!
+				// Normal was not modified by limit plan method - but we do need to reverse normal!
 				
 				[ norm reverse ] ;
 			}

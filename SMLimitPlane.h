@@ -35,6 +35,6 @@
 
 - (id) initWithReentrantArcs:(NSArray *)arcs usingMolecule:(SMMol *)mol ;
 
-- (BOOL) adjustPosition:(MMVector3 *)p ;
+- (BOOL) adjustPosition:(MMVector3 *)p andNormal:(MMVector3 *)n ;
 
 @end

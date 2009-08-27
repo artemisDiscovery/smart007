@@ -155,7 +155,7 @@
 		double dx1, dy1, dz1, dx2, dy2, dz2, dx3, dy3, dz3, dot ;
 		
 		dot = [ planeNormal dotWith:disp ] ;
-		
+				
 		dx1 = [ cycleProbe X ] - dot*[ planeNormal X ] ;
 		dy1 = [ cycleProbe Y ] - dot*[ planeNormal Y ] ;
 		dz1 = [ cycleProbe Z ] - dot*[ planeNormal Z ] ;
@@ -265,6 +265,14 @@
 				// bufferHeight = probeHeight / 2 ;  // This is not optimal
 				
 				bufferHeight = minHeight / 2 ;
+				
+				// BUT is this self-interecting or not?
+				
+				if( probeHeight < mol->probeRadius )
+					{
+						selfIntersection = YES ;
+					}
+				
 			}
 		else
 			{
@@ -276,7 +284,7 @@
 		return self ;
 	}
 	
-- (BOOL) adjustPosition:(MMVector3 *)p
+- (BOOL) adjustPosition:(MMVector3 *)p andNormal:(MMVector3 *)n
 	{
 		// Adjust position of supplied point to obey the limit plane
 		
@@ -299,6 +307,13 @@
 				[ p setZ:( [ cycleProbe Z ] + factor*dz ) ] ;
 				
 				adjust = YES ;
+				
+				if( n )
+					{
+						[ n setX:[ planeNormal X ] ] ;
+						[ n setY:[ planeNormal Y ] ] ;
+						[ n setZ:[ planeNormal Z ] ] ;
+					}
 			}
 			
 		return adjust ;

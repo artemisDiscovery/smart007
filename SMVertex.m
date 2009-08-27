@@ -215,7 +215,7 @@
 				theta = [ theArc thetaEnd ] ;
 			}
 			
-		MMVector3 *computePosition = [ theArc computePositionForTheta:theta andPhi:phi usingMolecule:m allowSelfIntersection:m->allowSelfIntersection normal:nil ] ;
+		MMVector3 *computePosition = [ theArc computePositionForTheta:theta andPhi:phi usingMolecule:m allowSelfIntersection:m->allowSelfIntersection normal:normal ] ;
 		
 		//if( fabs( [ computePosition X ] ) > 1000. )
 			//{
@@ -228,6 +228,7 @@
 		
 		[ computePosition release ] ;
 		
+		/* Rely on method computePositionForTheta.. to make normal
 		MMVector3 *probePos = [ theArc probePositionForPhi:phi ] ;
 		
 		[ normal setX:([ probePos X ] - [ position X ]) ] ;
@@ -237,6 +238,7 @@
 		[ normal normalize ] ;
 		
 		[ probePos release ] ;
+		*/
 		
 		return ;
 	}
@@ -285,67 +287,49 @@
 							
 				if( saddleArc )
 					{
-						position = [ saddleArc computePositionForTheta:theta andPhi:phi usingMolecule:m allowSelfIntersection:NO normal:nil ] ;
+						position = [ saddleArc computePositionForTheta:theta andPhi:phi usingMolecule:m allowSelfIntersection:NO normal:normal ] ;
 					}
 				else
 					{
 						// Need to use limit plane, if available, and if reentrant cycle is marked as self-intersecting
 						
+						// We always set the normal assuming the probe as reference at first ...
+						
 						SMArcEnd *theArcEnd = [ arcEnds anyObject ] ;
 		
 						SMArc *theArc = [ theArcEnd arc ] ;
 						
+						if( [ theArcEnd atStart ] == YES )
+							{
+								[ position release ] ;
+								
+								position = [ [ MMVector3 alloc ] initUsingVector:[ theArc startPosition ] ] ;
+								
+							}
+						else
+							{
+								[ position release ] ;
+								
+								position = [ [ MMVector3 alloc ] initUsingVector:[ theArc endPosition ] ] ;
+								
+							}
+
+						
+						MMVector3 *probePos ;
+															
+						probePos = [ theArc hostCenter ] ;
+							
+						[ normal setX:( [ probePos X ] - [ position X ] ) ] ;
+						[ normal setY:( [ probePos Y ] - [ position Y ] ) ] ;
+						[ normal setZ:( [ probePos  Z ] - [ position Z ] ) ] ;
+						
+						[ normal normalize ] ;
+						
 						if( cyc->theLimitPlane && cyc->selfIntersection == YES )
 							{
-								
-								if( [ theArcEnd atStart ] == YES )
-									{
-										[ position release ] ;
-										
-										position = [ [ MMVector3 alloc ] initUsingVector:[ theArc startPosition ] ] ;
-										
-										[ cyc->theLimitPlane adjustPosition:position ] ;
-									}
-								else
-									{
-										[ position release ] ;
-										
-										position = [ [ MMVector3 alloc ] initUsingVector:[ theArc endPosition ] ] ;
-										
-										[ cyc->theLimitPlane adjustPosition:position ] ;
-									}
-								}
-							else
-								{
-									[ position release ] ;
-		
-									if( [ theArcEnd atStart ] == YES )
-										{
-											position = [ [ MMVector3 alloc ] initUsingVector:[ theArc startPosition ] ] ;
-										}
-									else
-										{
-											position = [ [ MMVector3 alloc ] initUsingVector:[ theArc endPosition ] ] ;
-										}
-								}
+								[ cyc->theLimitPlane adjustPosition:position andNormal:normal ] ;
+							}
 					}
-					
-				// Should have something special here!
-				
-		
-				MMVector3 *probePos ;
-				
-				SMArcEnd *theArcEnd = [ arcEnds anyObject ] ;
-		
-				SMArc *theArc = [ theArcEnd arc ] ;
-									
-				probePos = [ theArc hostCenter ] ;
-					
-				[ normal setX:( [ probePos X ] - [ position X ] ) ] ;
-				[ normal setY:( [ probePos Y ] - [ position Y ] ) ] ;
-				[ normal setZ:( [ probePos  Z ] - [ position X ] ) ] ;
-				
-				[ normal normalize ] ;
 				
 			}
 		else
@@ -373,15 +357,15 @@
 					
 				[ normal setX:( [ probePos X ] - [ position X ] ) ] ;
 				[ normal setY:( [ probePos Y ] - [ position Y ] ) ] ;
-				[ normal setZ:( [ probePos  Z ] - [ position X ] ) ] ;
+				[ normal setZ:( [ probePos  Z ] - [ position Z ] ) ] ;
 				
 				[ normal normalize ] ;
 			}
 			
-		if( fabs( [ position X ] ) > 1000. )
-			{
-				printf( "WARNING: GENERATED BIG COORDINATE!\n" ) ;
-			}
+		//if( fabs( [ position X ] ) > 1000. )
+		//	{
+		//		printf( "WARNING: GENERATED BIG COORDINATE!\n" ) ;
+		//	}
 		
 		return ;
 	}

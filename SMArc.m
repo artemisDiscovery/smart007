@@ -1221,7 +1221,7 @@ SKIP_END:
 					
 					if( (limitPlane = parentCycle->theLimitPlane ) && parentCycle->selfIntersection == YES )
 						{
-							[ limitPlane adjustPosition:p ] ;
+							[ limitPlane adjustPosition:p andNormal:nil ] ;
 						}
 					
 					break ;

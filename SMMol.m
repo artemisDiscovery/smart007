@@ -3455,6 +3455,10 @@ PROCESS_FREE_TORI:
 		nReentrantElements = 0 ;
 		nSaddleElements = 0 ;
 		
+		// For debugging, I will set an initial vertex index. It may be overridded in code below 
+		
+		int vertexIndex = 0 ;
+		
 		cycleTypeEnumerator = [ cycleTypes objectEnumerator ] ;
 		
 		while( ( nextCycleType = [ cycleTypeEnumerator nextObject ] ) )
@@ -3578,6 +3582,9 @@ PROCESS_FREE_TORI:
 										[ vertices addObject:keepVertex ] ;
 										[ keepVertex release ] ;
 										
+										keepVertex->index = vertexIndex ;
+										++vertexIndex ;
+										
 										// Compute vertex position below
 										
 									}
@@ -3606,6 +3613,7 @@ PROCESS_FREE_TORI:
 									
 								if( newVertex == YES )
 									{
+											
 										if( nextCycleType == saddleCycles )
 											{
 												[ keepVertex computePositionForSaddleUsingMolecule:self ] ;
