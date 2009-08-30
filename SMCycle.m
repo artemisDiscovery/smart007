@@ -86,6 +86,52 @@
 		
 		return ;
 	}
+	
+- (BOOL) replaceArc:(SMArc *)oldArc with:(SMArc *)newArc
+	{
+		// Start position of newArc should co-incide with start position of oldArc (in which case it will
+		// adopt the same orientation) or the end (in which case orientation is the reverse)
+		
+		double dStartToStart, dStartToEnd ;
+		
+		dStartToStart = [ [ newArc startPosition ] distWith:[ oldArc startPosition ] ] ;
+		dStartToEnd = [ [ newArc startPosition ] distWith:[ oldArc endPosition ] ] ;
+		
+		int replaceIndex = [ arcs indexOfObject:oldArc ] ;
+		
+		if( replaceIndex == NSNotFound ) 
+			{
+				return NO ;
+			}
+		
+		BOOL oldOrientation = [ [ forward objectAtIndex:replaceIndex ] boolValue ] ;
+		
+		BOOL newOrientation ;
+		
+		[ arcs replaceObjectAtIndex:replaceIndex withObject:newArc  ] ;
+		
+		if( dStartToStart < dStartToEnd )
+			{
+				newOrientation = oldOrientation ;
+			}
+		else
+			{
+				if( oldOrientation == YES )
+					{
+						newOrientation = NO ;
+					}
+				else
+					{
+						newOrientation = YES ;
+					}
+			}
+			
+		[ forward replaceObjectAtIndex:replaceIndex withObject:[ NSNumber numberWithBool:newOrientation ] ] ;
+		
+		[ newArc addParentCycle:self ] ;
+		
+		return YES ;
+	}
 
 - (NSMutableArray *) arcs
 	{

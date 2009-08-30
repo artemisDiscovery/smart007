@@ -2199,6 +2199,7 @@ PROCESS_FREE_TORI:
 	}
 								
 								
+								
 		
 		
 								
@@ -3921,9 +3922,116 @@ PROCESS_FREE_TORI:
 									}
 							}
 							
-						if( M < 3 )
+						if( M < 3  )
 							{
 								[ nextCycle killCycle ] ;
+								
+								if( M == 0 || M == 1 || M == 2 ) 
+									{
+										// Reduce element count, but don't need to do anything else
+								
+										if( nextCycleType == contactCycles )
+											{
+												--nContactElements ;
+												--nElements ;
+											}
+										else if( nextCycleType == reentrantCycles )
+											{
+												--nReentrantElements ;
+												--nElements ;
+											}
+										else
+											{
+												// SHOULD NEVER REACH THIS CLAUSE - saddle cycles taken care of above!
+												--nSaddleElements ;
+												--nElements ;
+											}
+											
+										continue ;
+									}
+									
+								// M == 2 ; Need to eliminate one edge, and keep one
+								
+								// Like everything else, this is really tricky. If we assign 
+								
+								SMArc *keepEdge = nil ;
+								SMArc *killEdge = nil ;
+								
+								arcEnumerator = [ [ nextCycle arcs ] objectEnumerator ] ;
+								
+								while( ( nextArc = [ arcEnumerator nextObject ] ) ) 
+									{
+										if( [ nextArc skip ] == NO )
+											{
+												if( ! keepEdge ) 
+													{
+														keepEdge = nextArc ;
+													}
+												else
+													{
+														killEdge = nextArc ;
+													}
+											}
+									}
+									
+								if( ! keepEdge || ! killEdge )
+									{
+										printf( "CAN'T COLLAPSE CYCLE DURING VERTEX MERGE - Exit!\n" ) ;
+										exit(1) ;
+									}
+									
+								// If one of these is a saddle edge, keep it (saddle edges have more information)
+								
+								SMArc *swapEdge ;
+								
+								if( keepEdge->phiStart == -1. )
+									{
+										if( killEdge->phiStart >= 0. )
+											{
+												// Swap 
+												
+												swapEdge = keepEdge ;
+												keepEdge = killEdge ;
+												killEdge = swapEdge ;
+											}
+									}
+									
+								// HOWEVER if killEdge has no parent cycles, we need to swap again
+								
+								if( [ [ killEdge parentCycles ] count ] == 0 )
+									{
+										// Swap 
+												
+										swapEdge = keepEdge ;
+										keepEdge = killEdge ;
+										killEdge = swapEdge ;
+									}
+						
+								// OK here is the idea - killEdge should have a non-dead cycle cycleA associated with it. 
+								// Replace killEdge by keepEdge in cycleA. Add cycleA as a parent cycle of keepEdge.  
+								
+								NSEnumerator *parentCycleEnumerator = [ [ killEdge parentCycles ] objectEnumerator ] ;
+								SMCycle *nextParentCycle ;
+								SMCycle *keepCycle = nil ;
+								
+								while( ( nextParentCycle = [ parentCycleEnumerator nextObject ] ) )
+									{
+										if( [ nextParentCycle active ] == YES )
+											{
+												keepCycle = nextParentCycle ;
+												break ;
+											}
+									}
+									
+								if( ! keepCycle )
+									{
+										printf( "CAN'T COLLAPSE CYCLE DURING VERTEX MERGE - Exit!\n" ) ;
+										exit(1) ;
+									}
+									
+								[ keepCycle replaceArc:killEdge with:keepEdge ] ;
+								[ keepEdge addParentCycle:keepCycle ] ;
+								
 								
 								if( nextCycleType == contactCycles )
 									{
@@ -3937,6 +4045,7 @@ PROCESS_FREE_TORI:
 									}
 								else
 									{
+										// SHOULD NEVER REACH THIS CLAUSE - saddle cycles taken care of above!
 										--nSaddleElements ;
 										--nElements ;
 									}
@@ -4975,8 +5084,13 @@ PROCESS_FREE_TORI:
 				
 				// For now I am going to hardwire the minimal angle in the tangent test. I will make this 1 degrees
 				
+				// NOTE - I am backing off my initial strategy of respecting "skipped" contact arcs when triangulating
+				// contact cycles. This leads to potential tangles when cycles are removed during vertex merge. Rather, 
+				// I will let cycles go away during vertex merge. 
+				
 				double minTangentAngle = 1. * acos(-1.)/180. ;
 				
+
 				cycleEnumerator = [ contactCycles objectEnumerator ] ;
 				
 				while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
@@ -5008,16 +5122,19 @@ PROCESS_FREE_TORI:
 									}
 							}
 		
-					
-						if( MNoSkip == 3 ) 
+
+						//if( MNoSkip == 3 )
+						if( [ cycleArcs count ] == 3 ) 
 							{
 #ifndef SURFDEBUG
 								[ newCycles addObject:nextCycle ] ;
 #endif
 								continue ;
 							}
-						
-						if( MNoSkip == 2 )
+
+					
+						//if( MNoSkip == 2 )
+						if( [ cycleArcs count ] == 2 )
 							{
 								// Subdivide both available arcs
 								
@@ -5037,11 +5154,11 @@ PROCESS_FREE_TORI:
 									}
 								
 							}
-						else if( MNoSkip < 2 )
-							{
-								printf( "FATAL ERROR - CONTACT CYCLE HAS %d UNSKIPPED ARCS - Exit!\n", MNoSkip ) ;
-								exit(1) ;
-							}
+						//else if( MNoSkip < 2 )
+						//	{
+						//		printf( "FATAL ERROR - CONTACT CYCLE HAS %d UNSKIPPED ARCS - Exit!\n", MNoSkip ) ;
+						//		exit(1) ;
+						//	}
 								
 							
 										
@@ -5070,17 +5187,17 @@ PROCESS_FREE_TORI:
 						
 								for( j = 0 ; j <= M - 3 ; ++j )
 									{
-										if( [ [ cycleArcs objectAtIndex:j ] skip ]  == YES )
-											{
-												continue ;
-											}
+										//if( [ [ cycleArcs objectAtIndex:j ] skip ]  == YES )
+										//	{
+												//continue ;
+										//	}
 											
 										for( k = j + 2 ; k <= M - 1 ; ++k )
 											{
-												if( [ [ cycleArcs objectAtIndex:k ] skip ] == YES )
-													{
-														continue ;
-													}
+												//if( [ [ cycleArcs objectAtIndex:k ] skip ] == YES )
+												//	{
+														//continue ;
+												//	}
 													
 												// Build arc from start of j to start of k
 												

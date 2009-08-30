@@ -52,6 +52,8 @@
 
 - (void) addArc:(SMArc *)a forward:(BOOL)f ;
 
+- (BOOL) replaceArc:(SMArc *)oldArc with:(SMArc *)newArc ;
+
 - (NSMutableArray *) arcs ;
 
 - (NSMutableArray *) forward ;
