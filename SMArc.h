@@ -59,6 +59,9 @@
 	
 	BOOL skip ;
 	
+	// Collapse this arc with another? (FORGET THIS)
+	
+	//SMArc *collapseArc ;
 	
 	
 	BOOL useLimitPlane ;

@@ -64,6 +64,10 @@
 				
 		twin = nil ;
 		
+		skip = NO ;
+		
+		//collapseArc = nil ;
+		
 		startConnections = [ [ NSMutableArray alloc ] initWithCapacity:5 ]  ;
 		endConnections  = [ [ NSMutableArray alloc ] initWithCapacity:5 ] ;
 	

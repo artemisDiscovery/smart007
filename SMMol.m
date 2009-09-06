@@ -3926,8 +3926,8 @@ PROCESS_FREE_TORI:
 							{
 								[ nextCycle killCycle ] ;
 								
-								if( M == 0 || M == 1 || M == 2 ) 
-									{
+								//if( M == 0 || M == 1  ) 
+								//	{
 										// Reduce element count, but don't need to do anything else
 								
 										if( nextCycleType == contactCycles )
@@ -3948,14 +3948,27 @@ PROCESS_FREE_TORI:
 											}
 											
 										continue ;
-									}
+								//	}
 									
-								// M == 2 ; Need to eliminate one edge, and keep one
+									
+								// The complex shit below does not seem to work the way I intend - rather than trying to figure
+								// out why I am going to abandon it and address this issue at another juncture. 
 								
-								// Like everything else, this is really tricky. If we assign 
+								// M == 2 ; Need to assign two edges for collapse
 								
-								SMArc *keepEdge = nil ;
-								SMArc *killEdge = nil ;
+								// Like everything else, this is really tricky. There is a problem with assigning
+								// element midpoints that stems from having an incomplete/inconsistent definition of the 
+								// element (especially for saddle elements). Clearly it is dangerous to mix and match 
+								// elements.  I tried and failed to address remove missing elements by "stretching" an element
+								// to "cover" the collapsed element, effectively merging arcs from the bordering elements on either
+								// side. That does not work, and leads to failure in some cases to compute the element midpoint. 
+								
+								// Instead, I will assign an arc to a "collapse" arc. The internal points of 
+								// a collapse arc and its partner will be averaged when generating interpolation points
+								// for either host element.  
+								/*
+								SMArc *collapse1 = nil ;
+								SMArc *collapse2 = nil ;
 								
 								arcEnumerator = [ [ nextCycle arcs ] objectEnumerator ] ;
 								
@@ -3963,74 +3976,62 @@ PROCESS_FREE_TORI:
 									{
 										if( [ nextArc skip ] == NO )
 											{
-												if( ! keepEdge ) 
+												if( ! collapse1 ) 
 													{
-														keepEdge = nextArc ;
+														collapse1 = nextArc ;
 													}
 												else
 													{
-														killEdge = nextArc ;
+														collapse2 = nextArc ;
 													}
 											}
 									}
 									
-								if( ! keepEdge || ! killEdge )
+								if( ! collapse1 || ! collapse2 )
 									{
 										printf( "CAN'T COLLAPSE CYCLE DURING VERTEX MERGE - Exit!\n" ) ;
 										exit(1) ;
 									}
 									
-								// If one of these is a saddle edge, keep it (saddle edges have more information)
+								// Assign each as a collapse arc of the other
 								
-								SMArc *swapEdge ;
+								// Be careful if arcs are already engaged in a previous collapse!
 								
-								if( keepEdge->phiStart == -1. )
+								SMArc *collapseSource1, *collapseTarget1 ;
+								SMArc *collapseSource2, *collapseTarget2 ;
+								
+								if( collapse1->collapseArc )
 									{
-										if( killEdge->phiStart >= 0. )
-											{
-												// Swap 
-												
-												swapEdge = keepEdge ;
-												keepEdge = killEdge ;
-												killEdge = swapEdge ;
-											}
+										collapseTarget2 = collapse1->collapseArc ;
+										collapseSource1 = collapse1->collapseArc ;
+									}
+								else
+									{
+										collapseTarget2 = collapse1 ;
+										collapseSource1 = collapse1 ;
 									}
 									
-								// HOWEVER if killEdge has no parent cycles, we need to swap again
-								
-								if( [ [ killEdge parentCycles ] count ] == 0 )
+								if( collapse2->collapseArc )
 									{
-										// Swap 
-												
-										swapEdge = keepEdge ;
-										keepEdge = killEdge ;
-										killEdge = swapEdge ;
+										collapseTarget1 = collapse2->collapseArc ;
+										collapseSource2 = collapse2->collapseArc ;
 									}
-						
-								// OK here is the idea - killEdge should have a non-dead cycle cycleA associated with it. 
-								// Replace killEdge by keepEdge in cycleA. Add cycleA as a parent cycle of keepEdge.  
-								
-								NSEnumerator *parentCycleEnumerator = [ [ killEdge parentCycles ] objectEnumerator ] ;
-								SMCycle *nextParentCycle ;
-								SMCycle *keepCycle = nil ;
-								
-								while( ( nextParentCycle = [ parentCycleEnumerator nextObject ] ) )
+								else
 									{
-										if( [ nextParentCycle active ] == YES )
-											{
-												keepCycle = nextParentCycle ;
-												break ;
-											}
+										collapseTarget1 = collapse2 ;
+										collapseSource2 = collapse2 ;
 									}
 									
-								if( ! keepCycle )
-									{
-										printf( "CAN'T COLLAPSE CYCLE DURING VERTEX MERGE - Exit!\n" ) ;
-										exit(1) ;
-									}
-									
-								[ keepCycle replaceArc:killEdge with:keepEdge ] ;
-								[ keepEdge addParentCycle:keepCycle ] ;
+								collapseSource1->collapseArc = collapseTarget1 ;
+								collapseSource2->collapseArc = collapseTarget2 ;
+								
+								[ collapseSource1 mergeParentCyclesFromArc:collapseTarget1 ] ;
+								[ collapseSource2 mergeParentCyclesFromArc:collapseTarget2 ] ;
+								
+								[ collapseTarget1 mergeParentCyclesFromArc:collapseSource1 ] ;
+								[ collapseTarget2 mergeParentCyclesFromArc:collapseSource2 ] ;
+								
+								
 								
 								
 								if( nextCycleType == contactCycles )
@@ -4049,7 +4050,9 @@ PROCESS_FREE_TORI:
 										--nSaddleElements ;
 										--nElements ;
 									}
+								*/
 							}
+						
 							
 						
 					}
@@ -8111,6 +8114,12 @@ PROCESS_FREE_TORI:
 		
 		MMVector3 *interiorPoint[3][2] ;
 		
+		MMVector3 *interiorPoint1 = [ [ MMVector3 alloc ] initX:0. Y:0. Z:0. ] ;
+		MMVector3 *interiorPoint2 = [ [ MMVector3 alloc ] initX:0. Y:0. Z:0. ] ;
+		
+		MMVector3 *accumPoint1 = [ [ MMVector3 alloc ] initX:0. Y:0. Z:0. ] ;
+		MMVector3 *accumPoint2 = [ [ MMVector3 alloc ] initX:0. Y:0. Z:0. ] ;
+		
 		int vEdge, jPoint ;
 		
 		for( vEdge = 0 ; vEdge < 3 ; ++vEdge )
@@ -8188,6 +8197,196 @@ PROCESS_FREE_TORI:
 								nextForward = [ forwardEnumerator nextObject ] ;
 								
 								if( [ nextArc skip ] == YES ) continue ;
+								
+								// Check if our current arc has only one parent cycle - it must be associated with 
+								// a "slit" in the surface
+								
+								if( [ [ nextArc parentCycles ] count ] == 1 )
+									{
+										// Collect all arcs that connect the vertices at the ends of the arc
+										
+										NSMutableSet *startArcs = [ NSMutableSet setWithCapacity:5 ] ;
+										NSMutableSet *endArcs =   [ NSMutableSet setWithCapacity:5 ] ;
+									
+										
+										NSEnumerator *arcEndEnumerator = [ [ [ nextArc startVertex ] arcEnds ] objectEnumerator ] ;
+										
+										SMArc *nextNeighborArc ;
+										SMArcEnd *nextNeighborArcEnd ;
+										
+										while( ( nextNeighborArcEnd = [ arcEndEnumerator nextObject ] ) )
+											{
+												nextNeighborArc = [ nextNeighborArcEnd arc ] ;
+												
+												if( [ nextNeighborArc skip ] == YES ) continue ;
+												
+												// No parent cycles - NO!
+												
+												if( [ [ nextNeighborArc parentCycles ] count ] == 0 ) continue ;
+												
+												[ startArcs addObject:nextNeighborArc ] ;
+												
+											}
+											
+										arcEndEnumerator = [ [ [ nextArc endVertex ] arcEnds ] objectEnumerator ] ;
+										
+										while( ( nextNeighborArcEnd = [ arcEndEnumerator nextObject ] ) )
+											{
+												nextNeighborArc = [ nextNeighborArcEnd arc ] ;
+												
+												if( [ nextNeighborArc skip ] == YES ) continue ;
+												
+												// No parent cycles - NO!
+												
+												if( [ [ nextNeighborArc parentCycles ] count ] == 0 ) continue ;
+												
+												[ endArcs addObject:nextNeighborArc ] ;
+												
+											}
+											
+										// Intersect to find common arcs
+										
+										[ startArcs intersectSet:endArcs ] ;
+										
+										if( [ startArcs count ] == 0 )
+											{
+												printf( "CANNOT HEAL SLIT IN SURFACE - Exit!\n" ) ;
+												exit(1) ;
+											}
+											
+										// Convert to an array, assign relative orientation w.r.t. nextArc
+										
+										NSArray *connectArcs = [ startArcs allObjects ] ;
+										
+										NSMutableArray *relativeOrientationSame = [ NSMutableArray arrayWithCapacity:5 ] ;
+										
+										NSEnumerator *arcEnumerator = [ connectArcs objectEnumerator ] ;
+										
+										while( ( nextNeighborArc = [ arcEnumerator nextObject ] ) )
+											{
+												if( [ nextNeighborArc startVertex ] == [ nextArc startVertex ] )
+													{
+														[ relativeOrientationSame addObject:[ NSNumber numberWithBool:YES ] ] ;
+													}
+												else
+													{
+														[ relativeOrientationSame addObject:[ NSNumber numberWithBool:NO ] ] ;
+													}
+											}
+											
+										// Have the arcs and their orientations. Construct interior points
+										// We will find points at the 1/3 and 2/3 internal coordinate of the arcs, in same
+										// direction as next arc
+										
+										arcEnumerator = [ connectArcs objectEnumerator ] ;
+										
+										[ accumPoint1 setX:0. ] ;
+										[ accumPoint1 setY:0. ] ;
+										[ accumPoint1 setZ:0. ] ;
+										
+										[ accumPoint2 setX:0. ] ;
+										[ accumPoint2 setY:0. ] ;
+										[ accumPoint2 setZ:0. ] ;
+										
+										int iArc ;
+										
+										for( iArc = 0 ; iArc < [ connectArcs count ] ; ++iArc )
+											{
+												nextNeighborArc = [ connectArcs objectAtIndex:iArc ] ;
+												
+												if( [ [ relativeOrientationSame objectAtIndex:iArc ] boolValue ] == YES )
+													{
+														[ nextNeighborArc arcPoint:interiorPoint1 atFraction:(1./3.) usingMolecule:self ] ;
+														[ accumPoint1 setX:( [ accumPoint1 X ] + [ interiorPoint1 X ] ) ] ; 
+														[ accumPoint1 setY:( [ accumPoint1 Y ] + [ interiorPoint1 Y ] ) ] ;
+														[ accumPoint1 setZ:( [ accumPoint1 Z ] + [ interiorPoint1 Z ] ) ] ;
+														
+														[ nextNeighborArc arcPoint:interiorPoint2 atFraction:(2./3.) usingMolecule:self ] ;
+														[ accumPoint2 setX:( [ accumPoint2 X ] + [ interiorPoint2 X ] ) ] ; 
+														[ accumPoint2 setY:( [ accumPoint2 Y ] + [ interiorPoint2 Y ] ) ] ;
+														[ accumPoint2 setZ:( [ accumPoint2 Z ] + [ interiorPoint2 Z ] ) ] ;
+													}
+												else
+													{
+														[ nextNeighborArc arcPoint:interiorPoint1 atFraction:(2./3.) usingMolecule:self ] ;
+														[ accumPoint1 setX:( [ accumPoint1 X ] + [ interiorPoint1 X ] ) ] ; 
+														[ accumPoint1 setY:( [ accumPoint1 Y ] + [ interiorPoint1 Y ] ) ] ;
+														[ accumPoint1 setZ:( [ accumPoint1 Z ] + [ interiorPoint1 Z ] ) ] ;
+														
+														[ nextNeighborArc arcPoint:interiorPoint2 atFraction:(1./3.) usingMolecule:self ] ;
+														[ accumPoint2 setX:( [ accumPoint2 X ] + [ interiorPoint2 X ] ) ] ; 
+														[ accumPoint2 setY:( [ accumPoint2 Y ] + [ interiorPoint2 Y ] ) ] ;
+														[ accumPoint2 setZ:( [ accumPoint2 Z ] + [ interiorPoint2 Z ] ) ] ;
+													}
+											}
+											
+										// Scale by number of edges averaged together
+										
+										[ accumPoint1 setX:( [ accumPoint1 X ]/[ connectArcs count ] ) ] ;
+										[ accumPoint1 setY:( [ accumPoint1 Y ]/[ connectArcs count ] ) ] ;
+										[ accumPoint1 setZ:( [ accumPoint1 Z ]/[ connectArcs count ] ) ] ;
+										
+										[ accumPoint2 setX:( [ accumPoint2 X ]/[ connectArcs count ] ) ] ;
+										[ accumPoint2 setY:( [ accumPoint2 Y ]/[ connectArcs count ] ) ] ;
+										[ accumPoint2 setZ:( [ accumPoint2 Z ]/[ connectArcs count ] ) ] ;
+										
+														
+										if( [ nextForward boolValue ] == YES )
+											{
+												vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc startVertex] index ] ;
+												
+												[ interiorPoint[vCount][0] setX:( [ accumPoint1 X ] ) ] ;
+												[ interiorPoint[vCount][0] setY:( [ accumPoint1 Y ] ) ] ;
+												[ interiorPoint[vCount][0] setZ:( [ accumPoint1 Z ] ) ] ;
+												
+												[ interiorPoint[vCount][1] setX:( [ accumPoint2 X ] ) ] ;
+												[ interiorPoint[vCount][1] setY:( [ accumPoint2 Y ] ) ] ;
+												[ interiorPoint[vCount][1] setZ:( [ accumPoint2 Z ] ) ] ;
+											} 
+										else
+											{
+												vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc endVertex] index ] ;
+												
+												[ interiorPoint[vCount][0] setX:( [ accumPoint2 X ] ) ] ;
+												[ interiorPoint[vCount][0] setY:( [ accumPoint2 Y ] ) ] ;
+												[ interiorPoint[vCount][0] setZ:( [ accumPoint2 Z ] ) ] ;
+												
+												[ interiorPoint[vCount][1] setX:( [ accumPoint1 X ] ) ] ;
+												[ interiorPoint[vCount][1] setY:( [ accumPoint1 Y ] ) ] ;
+												[ interiorPoint[vCount][1] setZ:( [ accumPoint1 Z ] ) ] ;
+											}
+									}
+								else
+									{
+										// Have "normal" situation 
+										
+										if( [ nextForward boolValue ] == YES )
+											{
+												vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc startVertex] index ] ;
+												
+												 [ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(1./3.) usingMolecule:self ] ;
+												 [ nextArc arcPoint:interiorPoint[vCount][1] atFraction:(2./3.) usingMolecule:self ] ;
+											}
+										else
+											{
+												vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc endVertex ] index ] ;
+												
+												[ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(2./3.) usingMolecule:self ] ;
+												[ nextArc arcPoint:interiorPoint[vCount][1] atFraction:(1./3.) usingMolecule:self ] ;
+											}
+									}
+									
+								++vCount ;
+							}
+										
+										
+																
+										
+										
 										
 								/* Don't need this check here 
 								if( vCount == 3 )
@@ -8196,26 +8395,94 @@ PROCESS_FREE_TORI:
 										exit(1) ;
 									}
 								*/
-										
-								if( [ nextForward boolValue ] == YES )
+								
+								// This stuff did not work as I hoped - remove it and try another angle
+								/*
+								SMArc *collapsePartner ;
+								BOOL relativeOrientationSame ;
+								
+								if( ( collapsePartner = nextArc->collapseArc ) )
 									{
-										vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
-										ivs[vCount] = [ [ nextArc startVertex] index ] ;
+										// OK, special handling
 										
-										 [ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(1./3.) usingMolecule:self ] ;
-										 [ nextArc arcPoint:interiorPoint[vCount][1] atFraction:(2./3.) usingMolecule:self ] ;
+										// Get relative orientation of nextArc and its collapse partner
+										
+										if( nextArc->startVertex == collapsePartner->startVertex )
+											{
+												relativeOrientationSame = YES ;
+											}
+										else
+											{
+												relativeOrientationSame = NO ;
+											}
+											
+										if( [ nextForward boolValue ] == YES )
+											{
+												vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc startVertex] index ] ;
+												
+												[ nextArc arcPoint:interiorPoint1 atFraction:(1./3.) usingMolecule:self ] ;
+												
+												if( relativeOrientationSame == YES )
+													{
+														[ collapsePartner arcPoint:interiorPoint2 atFraction:(1./3.) usingMolecule:self ] ;
+													}
+												else
+													{
+														[ collapsePartner arcPoint:interiorPoint2 atFraction:(2./3.) usingMolecule:self ] ;
+													}
+													
+												[ interiorPoint[vCount][0] setX:( [ interiorPoint1 X ] + [ interiorPoint2 X ] )/2. ] ;
+												[ interiorPoint[vCount][0] setY:( [ interiorPoint1 Y ] + [ interiorPoint2 Y ] )/2. ] ;
+												[ interiorPoint[vCount][0] setZ:( [ interiorPoint1 Z ] + [ interiorPoint2 Z ] )/2. ] ;
+											}
+										else
+											{
+												vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc endVertex ] index ] ;
+
+												[ nextArc arcPoint:interiorPoint1 atFraction:(2./3.) usingMolecule:self ] ;
+												
+												if( relativeOrientationSame == YES )
+													{
+														[ collapsePartner arcPoint:interiorPoint2 atFraction:(2./3.) usingMolecule:self ] ;
+													}
+												else
+													{
+														[ collapsePartner arcPoint:interiorPoint2 atFraction:(1./3.) usingMolecule:self ] ;
+													}
+													
+												[ interiorPoint[vCount][0] setX:( [ interiorPoint1 X ] + [ interiorPoint2 X ] )/2. ] ;
+												[ interiorPoint[vCount][0] setY:( [ interiorPoint1 Y ] + [ interiorPoint2 Y ] )/2. ] ;
+												[ interiorPoint[vCount][0] setZ:( [ interiorPoint1 Z ] + [ interiorPoint2 Z ] )/2. ] ;
+											}
 									}
 								else
 									{
-										vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
-										ivs[vCount] = [ [ nextArc endVertex ] index ] ;
 										
-										[ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(2./3.) usingMolecule:self ] ;
-										[ nextArc arcPoint:interiorPoint[vCount][1] atFraction:(1./3.) usingMolecule:self ] ;
+										
+										if( [ nextForward boolValue ] == YES )
+											{
+												vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc startVertex] index ] ;
+												
+												 [ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(1./3.) usingMolecule:self ] ;
+												 [ nextArc arcPoint:interiorPoint[vCount][1] atFraction:(2./3.) usingMolecule:self ] ;
+											}
+										else
+											{
+												vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc endVertex ] index ] ;
+												
+												[ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(2./3.) usingMolecule:self ] ;
+												[ nextArc arcPoint:interiorPoint[vCount][1] atFraction:(1./3.) usingMolecule:self ] ;
+											}
 									}
 									
 								++vCount ;
 							}
+							
+						*/
 							
 						if( iPhase != 2  || ( iPhase == 2 && [ [ [ [ nextCycle arcs ] lastObject ] torusSection ] skipTorus ] == NO ) )
 							{
@@ -8545,14 +8812,199 @@ PROCESS_FREE_TORI:
 								nextForward = [ forwardEnumerator nextObject ] ;
 								
 								if( [ nextArc skip ] == YES ) continue ;
-										
-								/* Don't need this check here 
-								if( vCount == 3 )
+								
+								// Check if our current arc has only one parent cycle - it must be associated with 
+								// a "slit" in the surface
+								
+								if( [ [ nextArc parentCycles ] count ] == 1 )
 									{
-										printf( "TOO MANY ARCS IN CYCLE OF TYPE %d - Exit!\n", iPhase ) ;
-										exit(1) ;
+										// Collect all arcs that connect the vertices at the ends of the arc
+										
+										NSMutableSet *startArcs = [ NSMutableSet setWithCapacity:5 ] ;
+										NSMutableSet *endArcs =   [ NSMutableSet setWithCapacity:5 ] ;
+									
+										
+										NSEnumerator *arcEndEnumerator = [ [ [ nextArc startVertex ] arcEnds ] objectEnumerator ] ;
+										
+										SMArc *nextNeighborArc ;
+										SMArcEnd *nextNeighborArcEnd ;
+										
+										while( ( nextNeighborArcEnd = [ arcEndEnumerator nextObject ] ) )
+											{
+												nextNeighborArc = [ nextNeighborArcEnd arc ] ;
+												
+												if( [ nextNeighborArc skip ] == YES ) continue ;
+												
+												// No parent cycles - NO!
+												
+												if( [ [ nextNeighborArc parentCycles ] count ] == 0 ) continue ;
+												
+												[ startArcs addObject:nextNeighborArc ] ;
+												
+											}
+											
+										arcEndEnumerator = [ [ [ nextArc endVertex ] arcEnds ] objectEnumerator ] ;
+										
+										while( ( nextNeighborArcEnd = [ arcEndEnumerator nextObject ] ) )
+											{
+												nextNeighborArc = [ nextNeighborArcEnd arc ] ;
+												
+												if( [ nextNeighborArc skip ] == YES ) continue ;
+												
+												// No parent cycles - NO!
+												
+												if( [ [ nextNeighborArc parentCycles ] count ] == 0 ) continue ;
+												
+												[ endArcs addObject:nextNeighborArc ] ;
+												
+											}
+											
+										// Intersect to find common arcs
+										
+										[ startArcs intersectSet:endArcs ] ;
+										
+										if( [ startArcs count ] == 0 )
+											{
+												printf( "CANNOT HEAL SLIT IN SURFACE - Exit!\n" ) ;
+												exit(1) ;
+											}
+											
+										// Convert to an array, assign relative orientation w.r.t. nextArc
+										
+										NSArray *connectArcs = [ startArcs allObjects ] ;
+										
+										NSMutableArray *relativeOrientationSame = [ NSMutableArray arrayWithCapacity:5 ] ;
+										
+										NSEnumerator *arcEnumerator = [ connectArcs objectEnumerator ] ;
+										
+										while( ( nextNeighborArc = [ arcEnumerator nextObject ] ) )
+											{
+												if( [ nextNeighborArc startVertex ] == [ nextArc startVertex ] )
+													{
+														[ relativeOrientationSame addObject:[ NSNumber numberWithBool:YES ] ] ;
+													}
+												else
+													{
+														[ relativeOrientationSame addObject:[ NSNumber numberWithBool:NO ] ] ;
+													}
+											}
+											
+										// Have the arcs and their orientations. Construct interior points
+										// We will find points at the 1/3 and 2/3 internal coordinate of the arcs, in same
+										// direction as next arc
+										
+										arcEnumerator = [ connectArcs objectEnumerator ] ;
+										
+										[ accumPoint1 setX:0. ] ;
+										[ accumPoint1 setY:0. ] ;
+										[ accumPoint1 setZ:0. ] ;
+										
+										[ accumPoint2 setX:0. ] ;
+										[ accumPoint2 setY:0. ] ;
+										[ accumPoint2 setZ:0. ] ;
+										
+										int iArc ;
+										
+										for( iArc = 0 ; iArc < [ connectArcs count ] ; ++iArc )
+											{
+												nextNeighborArc = [ connectArcs objectAtIndex:iArc ] ;
+												
+												if( [ [ relativeOrientationSame objectAtIndex:iArc ] boolValue ] == YES )
+													{
+														[ nextNeighborArc arcPoint:interiorPoint1 atFraction:(1./3.) usingMolecule:self ] ;
+														[ accumPoint1 setX:( [ accumPoint1 X ] + [ interiorPoint1 X ] ) ] ; 
+														[ accumPoint1 setY:( [ accumPoint1 Y ] + [ interiorPoint1 Y ] ) ] ;
+														[ accumPoint1 setZ:( [ accumPoint1 Z ] + [ interiorPoint1 Z ] ) ] ;
+														
+														[ nextNeighborArc arcPoint:interiorPoint2 atFraction:(2./3.) usingMolecule:self ] ;
+														[ accumPoint2 setX:( [ accumPoint2 X ] + [ interiorPoint2 X ] ) ] ; 
+														[ accumPoint2 setY:( [ accumPoint2 Y ] + [ interiorPoint2 Y ] ) ] ;
+														[ accumPoint2 setZ:( [ accumPoint2 Z ] + [ interiorPoint2 Z ] ) ] ;
+													}
+												else
+													{
+														[ nextNeighborArc arcPoint:interiorPoint1 atFraction:(2./3.) usingMolecule:self ] ;
+														[ accumPoint1 setX:( [ accumPoint1 X ] + [ interiorPoint1 X ] ) ] ; 
+														[ accumPoint1 setY:( [ accumPoint1 Y ] + [ interiorPoint1 Y ] ) ] ;
+														[ accumPoint1 setZ:( [ accumPoint1 Z ] + [ interiorPoint1 Z ] ) ] ;
+														
+														[ nextNeighborArc arcPoint:interiorPoint2 atFraction:(1./3.) usingMolecule:self ] ;
+														[ accumPoint2 setX:( [ accumPoint2 X ] + [ interiorPoint2 X ] ) ] ; 
+														[ accumPoint2 setY:( [ accumPoint2 Y ] + [ interiorPoint2 Y ] ) ] ;
+														[ accumPoint2 setZ:( [ accumPoint2 Z ] + [ interiorPoint2 Z ] ) ] ;
+													}
+											}
+											
+										// Scale by number of edges averaged together
+										
+										[ accumPoint1 setX:( [ accumPoint1 X ]/[ connectArcs count ] ) ] ;
+										[ accumPoint1 setY:( [ accumPoint1 Y ]/[ connectArcs count ] ) ] ;
+										[ accumPoint1 setZ:( [ accumPoint1 Z ]/[ connectArcs count ] ) ] ;
+										
+										[ accumPoint2 setX:( [ accumPoint2 X ]/[ connectArcs count ] ) ] ;
+										[ accumPoint2 setY:( [ accumPoint2 Y ]/[ connectArcs count ] ) ] ;
+										[ accumPoint2 setZ:( [ accumPoint2 Z ]/[ connectArcs count ] ) ] ;
+										
+														
+										if( [ nextForward boolValue ] == YES )
+											{
+												vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc startVertex] subsurfaceIndex ] ;
+												
+												[ interiorPoint[vCount][0] setX:( [ accumPoint1 X ] ) ] ;
+												[ interiorPoint[vCount][0] setY:( [ accumPoint1 Y ] ) ] ;
+												[ interiorPoint[vCount][0] setZ:( [ accumPoint1 Z ] ) ] ;
+												
+												[ interiorPoint[vCount][1] setX:( [ accumPoint2 X ] ) ] ;
+												[ interiorPoint[vCount][1] setY:( [ accumPoint2 Y ] ) ] ;
+												[ interiorPoint[vCount][1] setZ:( [ accumPoint2 Z ] ) ] ;
+											} 
+										else
+											{
+												vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc endVertex] subsurfaceIndex ] ;
+												
+												[ interiorPoint[vCount][0] setX:( [ accumPoint2 X ] ) ] ;
+												[ interiorPoint[vCount][0] setY:( [ accumPoint2 Y ] ) ] ;
+												[ interiorPoint[vCount][0] setZ:( [ accumPoint2 Z ] ) ] ;
+												
+												[ interiorPoint[vCount][1] setX:( [ accumPoint1 X ] ) ] ;
+												[ interiorPoint[vCount][1] setY:( [ accumPoint1 Y ] ) ] ;
+												[ interiorPoint[vCount][1] setZ:( [ accumPoint1 Z ] ) ] ;
+											}
 									}
-								*/
+								else
+									{
+										// Have "normal" situation 
+										
+										if( [ nextForward boolValue ] == YES )
+											{
+												vs[vCount] = [ [ nextArc startVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc startVertex] subsurfaceIndex ] ;
+												
+												 [ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(1./3.) usingMolecule:self ] ;
+												 [ nextArc arcPoint:interiorPoint[vCount][1] atFraction:(2./3.) usingMolecule:self ] ;
+											}
+										else
+											{
+												vs[vCount] = [ [ nextArc endVertex ] vertexPosition ] ;
+												ivs[vCount] = [ [ nextArc endVertex ] subsurfaceIndex ] ;
+												
+												[ nextArc arcPoint:interiorPoint[vCount][0] atFraction:(2./3.) usingMolecule:self ] ;
+												[ nextArc arcPoint:interiorPoint[vCount][1] atFraction:(1./3.) usingMolecule:self ] ;
+											}
+									}
+									
+								++vCount ;
+							}
+						
+						/*
+						while( ( nextArc = [ arcEnumerator nextObject ] ) )
+							{
+								nextForward = [ forwardEnumerator nextObject ] ;
+								
+								if( [ nextArc skip ] == YES ) continue ;
+										
 										
 								if( [ nextForward boolValue ] == YES )
 									{
@@ -8575,6 +9027,8 @@ PROCESS_FREE_TORI:
 									
 								++vCount ;
 							}
+							
+						*/
 							
 						if( iPhase != 2  || ( iPhase == 2 && [ [ [ [ nextCycle arcs ] lastObject ] torusSection ] skipTorus ] == NO ) )
 							{
