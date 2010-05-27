@@ -363,7 +363,7 @@ int main (int argc, const char * argv[]) {
 	
 	// Initial contact cycles
 	
-	[ theMolecule generateContactCycles ] ;
+	[ theMolecule generateContactCyclesUsingDivision:lengthParam ] ;
 	
 	//As a test
 	//[ theMolecule cullContactCycles ] ;

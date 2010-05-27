@@ -1801,13 +1801,15 @@
 		return ;
 	}
 	
-- (void) generateContactCycles
+- (void) generateContactCyclesUsingDivision:(double)div
 	{
 		// Generate cycles of contact arcs 
 		
 		BOOL working = YES ;
 		
 		contactCycles = [ [ NSMutableArray alloc ] initWithCapacity:nAtoms ] ;
+		
+		NSMutableArray *tempArcs =  [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 		
 		enum { initCycleI, initCycleJ, accumulateCycle } state ;
 		
@@ -1963,10 +1965,36 @@
 									
 									[ atomsToCycles[ currentAtom ] addObject:currentCycle ] ;
 									
-									[ currentCycle release ] ;
+									[ tempArcs removeAllObjects ] ;
 									
-														
-											
+									[ tempArcs addObjectsFromArray:[ currentCycle arcs ] ] ;
+									
+									// Subdivide any large arcs up front. Should not have any twins at this point. 
+									
+									NSEnumerator *arcEnumerator = [ tempArcs objectEnumerator ] ;
+									
+									SMArc *nextCycleArc ;
+									
+									while( ( nextCycleArc = [ arcEnumerator nextObject ] ) )
+										{
+											int nDiv = (int) floor( [ nextCycleArc length ] / div ) ;
+		
+											if( nDiv < 2 )
+												{
+													// Check for angle
+													
+													if( [ nextCycleArc angle ] > acos(-1.)/2. )
+														{
+															[ self subdivideArc:nextCycleArc ] ;
+														}
+												}
+											else
+												{
+													[ self subdivideArc:nextCycleArc usingDivision:div ] ;
+												}
+										}
+
+									[ currentCycle release ] ;
 									
 									state = initCycleI ;
 								}
@@ -2053,7 +2081,7 @@ PROCESS_FREE_TORI:
 				
 			}
 
-		
+		[ tempArcs release ] ;
 			
 		printf( "\nGenerated %d contact cycles ...\n", [ contactCycles count ] ) ;
 		
@@ -4387,6 +4415,7 @@ PROCESS_FREE_TORI:
 		
 		for( iAtom = 0 ; iAtom < nAtoms ; ++iAtom )
 			{
+					
 				if( ! atomsToCycles[iAtom] ) continue ;
 				
 				// While loop is executed while we still need to check for cycle combination
@@ -5003,6 +5032,7 @@ PROCESS_FREE_TORI:
 		
 		
 		// Start by subdividing all existing arcs
+		// NOTE - I am predividing now in generateContactCycles, so this step should be overkill
 		
 		cycleEnumerator = [ contactCycles objectEnumerator ] ;
 		
@@ -5053,7 +5083,21 @@ PROCESS_FREE_TORI:
 						
 						if( [ [ nextCycle arcs ] indexOfObject:nextArc ] == NSNotFound ) continue ;
 						
-						[ self subdivideArc:nextArc usingDivision:div ] ;
+						int nDiv = (int) floor( [ nextArc length ] / div ) ;
+		
+						if( nDiv < 2 )
+							{
+								// Check for angle
+								
+								if( [ nextArc angle ] > acos(-1.)/2. )
+									{
+										[ self subdivideArc:nextArc ] ;
+									}
+							}
+						else
+							{
+								[ self subdivideArc:nextArc usingDivision:div ] ;
+							}
 					}
 			}
 			

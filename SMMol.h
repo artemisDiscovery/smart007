@@ -104,7 +104,7 @@
 
 - (void) generateToriUsingSkipWidth:(double)skipW ;
 
-- (void) generateContactCycles ;
+- (void) generateContactCyclesUsingDivision:(double)div ;
 
 - (void) combineContactCycles ;
 

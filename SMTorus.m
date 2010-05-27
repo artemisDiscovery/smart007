@@ -145,6 +145,7 @@
 				
 				bufferI = -1. ;
 				bufferJ = -1. ;
+				bufferIJ = -1 ;
 			}
 		else
 			{
