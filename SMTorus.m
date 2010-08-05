@@ -7,6 +7,7 @@
 //
 
 #import "SMTorus.h"
+#include <math.h>
 
 
 @implementation SMTorus

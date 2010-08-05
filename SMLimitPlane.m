@@ -7,6 +7,7 @@
 //
 
 #import "SMLimitPlane.h"
+#include <math.h>
 
 
 @implementation SMLimitPlane

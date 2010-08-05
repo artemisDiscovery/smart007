@@ -9,6 +9,12 @@
 #import <Foundation/Foundation.h>
 #import "vector3.h"
 
+#include "platform.h"
+#ifdef LINUX
+#define TRUE 1
+#define FALSE 0
+#endif
+
 
 @class SMArcEnd ;
 @class SMArc ;

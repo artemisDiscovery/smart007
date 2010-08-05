@@ -8,6 +8,13 @@
 
 #import <Foundation/Foundation.h>
 
+#include "platform.h"
+#ifdef LINUX
+#define TRUE 1
+#define FALSE 0
+#endif
+
+
 // This class implements simple defs of a 3D vector and operations on vector. 
 // Will be expanded as needed
 

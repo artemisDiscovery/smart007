@@ -7,6 +7,7 @@
 //
 
 #import "SMProbe.h"
+#include <math.h>
 
 
 @implementation SMProbe

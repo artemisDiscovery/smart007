@@ -2475,7 +2475,7 @@ PROCESS_FREE_TORI:
 							
 							if( ! closestArc || closestDist > 0.01 )
 								{
-									printf( "ERROR IN CLOSING REENTRANT CYCLE NEAR ATOMS %d - Exit!\n", [ currentTorus atomI ],
+									printf( "ERROR IN CLOSING REENTRANT CYCLE NEAR ATOMS %d, %d - Exit!\n", [ currentTorus atomI ],
 										[ currentTorus atomJ ] ) ;
 									exit(1) ;
 								}

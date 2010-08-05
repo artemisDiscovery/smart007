@@ -2,6 +2,12 @@
 #import "SMMol.h"
 #include <stdlib.h>
 
+#include "platform.h"
+#ifdef LINUX
+#define TRUE 1
+#define FALSE 0
+#endif
+
 int main (int argc, const char * argv[]) {
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	

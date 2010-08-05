@@ -7,6 +7,7 @@
 //
 
 #import "vector3.h"
+#include <math.h>
 
 
 @implementation MMVector3
@@ -121,7 +122,7 @@
 - (id)initX: (double)x  Y: (double)y  Z: (double)z 
 {
 
-    if( self = [ super init ] )
+    if( ( self = [ super init ] ) )
         {
             X = x ;
             Y = y ;
@@ -196,7 +197,7 @@
     double xp, yp, zp, xc, yc, zc ;
     double xr, yr, zr ;
 
-    if( self = [ super init ] )
+    if( ( self = [ super init ] ) )
         {
             xp = [ p X ] ;
             yp = [ p Y ] ;

@@ -12,6 +12,12 @@
 //#import "SMTorus.h"
 #import "SMArc.h"
 
+#include "platform.h"
+#ifdef LINUX
+#define TRUE 1
+#define FALSE 0
+#endif
+
 @class SMProbe ;
 @class SMTorus ;
 //@class SMArc ;
@@ -156,7 +162,9 @@
 - (void) subdivideArc:(SMArc *)a usingDivision:(double)div ;
 - (NSArray *) subdivideTheArc:(SMArc *)a ;
 - (NSArray *) subdivideTheArc:(SMArc *)a usingDivision:(double) div ;
-				
+
+- (void) probesToMOL2UsingFile:(NSString *)f ;
+
 // For debugging
 
 - (void) writeMOEGraphicsForArc:(SMArc *)a usingColorIndex:(unsigned int)c andGraphicsObject:(NSString *)g ;

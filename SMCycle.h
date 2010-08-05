@@ -9,6 +9,12 @@
 #import <Foundation/Foundation.h>
 #import "SMLimitPlane.h"
 
+#include "platform.h"
+#ifdef LINUX
+#define TRUE 1
+#define FALSE 0
+#endif
+
 @class SMArc ;
 @class SMVertex ;
 
@@ -59,7 +65,7 @@
 - (NSMutableArray *) forward ;
 
 - (NSMutableSet *) atoms ;
-- (NSMutableSet *) probes ;
+//- (NSMutableSet *) probes ;
 
 - (BOOL) active ;
 

@@ -11,6 +11,13 @@
 #import "SMArc.h"
 //@class SMMol ;
 
+#include "platform.h"
+#ifdef LINUX
+#define TRUE 1
+#define FALSE 0
+#endif
+
+
 @interface SMTorus : NSObject 
 {
 

@@ -12,6 +12,12 @@
 #import "SMVertex.h"
 #import "SMLimitPlane.h"
 
+#include "platform.h"
+#ifdef LINUX
+#define TRUE 1
+#define FALSE 0
+#endif
+
 @class SMTorus ;
 @class SMCycle ;
 @class SMMol ;
@@ -199,7 +205,7 @@
 
 - (BOOL) withinArc:(MMVector3 *) pos ;
 
-- (void) addConnectionToArc:(SMArc *)a ;
+//- (void) addConnectionToArc:(SMArc *)a ;
 
 - (void) arcPoint:(MMVector3 *)p atFraction:(double)f usingMolecule:(SMMol *)m ;
 
