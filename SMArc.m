@@ -35,9 +35,10 @@
 		
 		length = angle = 0.  ;
 		
-		useLimitPlane = NO ;
-		limitPlanePoint = limitPlaneNormal = nil ;
-		lpStart = lpEnd = nil ;
+		touchLimitPlane = NO ;
+	
+		thetaLPStart = -1. ;
+		thetaLPEnd = -1. ;
 		
 		hostProbe = nil ;
 		
@@ -114,26 +115,11 @@
 		
 		arcCopy->skip = skip ;
 		
-		arcCopy->useLimitPlane = useLimitPlane ;
-		
-		if( useLimitPlane == YES )
-			{
-		
-				arcCopy->limitPlanePoint = [ [ MMVector3 alloc ] initUsingVector:limitPlanePoint ] ;
-		
-				arcCopy->limitPlaneNormal = [ [ MMVector3 alloc ] initUsingVector:limitPlaneNormal ] ;
-		
-				arcCopy->lpStart = [ [ MMVector3 alloc ] initUsingVector:lpStart ] ;
-				arcCopy->lpEnd = [ [ MMVector3 alloc ] initUsingVector:lpEnd ] ;
-			}
-		else
-			{
-				arcCopy->limitPlanePoint = nil ;
-				arcCopy->limitPlaneNormal = nil ;
-				arcCopy->lpStart = nil ;
-				arcCopy->lpEnd = nil ;
-			}
-		
+		arcCopy->touchLimitPlane = touchLimitPlane ;
+	
+		arcCopy->thetaLPStart = thetaLPStart ;
+		arcCopy->thetaLPEnd = thetaLPEnd ;
+				
 		arcCopy->hostProbe = hostProbe ;
 		[ hostProbe retain ] ;
 		
@@ -349,10 +335,10 @@
 		
 		length = angle = 0.  ;
 		
-		useLimitPlane = NO ;
-		limitPlanePoint = limitPlaneNormal = nil ;
-		lpStart = lpEnd = nil ;
-		
+		touchLimitPlane = NO ;
+		thetaLPStart = -1. ;
+		thetaLPEnd = -1. ;
+	
 		hostProbe = nil ;
 		
 		torusSection = ts ;
@@ -477,11 +463,6 @@
 		[ startU release ] ;
 		[ endU release ] ;
 		[ uPerp release ] ;
-		
-		if( limitPlanePoint ) [ limitPlanePoint release ] ;
-		if( limitPlaneNormal ) [  limitPlaneNormal release ] ;
-		if( lpStart ) [ lpStart release ] ;
-		if( lpEnd ) [ lpEnd release ] ;
 		
 		
 		

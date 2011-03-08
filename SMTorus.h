@@ -55,11 +55,12 @@
 	// bufferI and bufferJ are 1/2 the distance from probe contact points at atoms I and J to the 
 	// interatomic axis
 	
-	double bufferI, bufferJ, bufferIJ ;
+	double heightI, heightJ, heightIJ ;
+	double bufferIJ ;
 	
 	// Also compute limits on theta for self-intersection
 	
-	double thetaSelfLo, thetaSelfHi, thetaBufferI, thetaBufferJ, dIBufferI, dIBufferJ ;
+	double thetaSelfLo, thetaSelfHi, thetaBufferLo, thetaBufferHi ;
 	double thetaMax ;
 	
 	BOOL selfIntersection ;

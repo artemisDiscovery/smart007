@@ -133,6 +133,18 @@
 		
 		skipTorus = NO ;
 		
+		double omega, tau ;
+	
+		// Omega is the angle beween 1) the ray from the probe center to atom I and 2) the perpendicular from probe center to base point
+		
+		
+		omega = acos( saddleRadius / ( probeRad + radii[atomI] ) ) ;
+		
+	
+		heightI = saddleRadius - probeRad*cos(omega) ;
+		heightJ = saddleRadius - probeRad*cos(thetaMax - omega) ;
+
+	
 		// Determine if this torus presents self-intersecting surface
 		
 		if( saddleRadius > probeRad )
@@ -143,21 +155,19 @@
 				
 				thetaSelfLo = -1. ;
 				thetaSelfHi = -1. ;
-				
-				bufferI = -1. ;
-				bufferJ = -1. ;
+			
+				thetaBufferLo = -1 ;
+				thetaBufferHi = -1. ;
+			
 				bufferIJ = -1 ;
 			}
 		else
 			{
 				// Need another test - compute thetaSelfLo, thetaSelfHi and check against thetaMax for this torus section
-				
-				// Omega is the angle beween 1) the ray from the probe center to atom I and 2) the perpendicular from probe center to base point
+				// (Because the part of the probe that pentrates the interatomic axis need not be involved in generating the saddle surface)
+			
 				// Tau is the angle between 1) the ray from probe center to first intersection between probe and axis
 				
-				double omega, tau ;
-				
-				omega = acos( saddleRadius / ( probeRad + radii[atomI] ) ) ;
 				tau = acos( saddleRadius / probeRad ) ;
 				
 				thetaSelfLo = omega - tau ;
@@ -169,35 +179,33 @@
 					{
 						selfIntersection = YES ;
 						
-						bufferI = ( saddleRadius - probeRad*cos(omega) ) / 2. ;
-						bufferJ = ( saddleRadius - probeRad*cos(thetaMax - omega) ) / 2. ;
-						
+												
 						// Compute theta angles corresponding to entry into the buffer zone
 						
 						// FOR SIMPLICITY, I am going to use one buffer value, the minimum of bufferI and bufferJ
 						
 						if( bufferI < bufferJ )
 							{
-								bufferIJ = bufferI ;
+								heightIJ = bufferI ;
 							}
 						else
 							{
-								bufferIJ = bufferJ ;
+								heightIJ = bufferJ ;
 							}
+					
+						bufferIJ = heightIJ/2. ;
 						
-						thetaBufferI = omega - acos( ( saddleRadius - bufferIJ ) / probeRad ) ;
-						thetaBufferJ = omega + acos( ( saddleRadius - bufferIJ ) / probeRad ) ;
+						thetaBufferLo = omega - acos( ( saddleRadius - bufferIJ ) / probeRad ) ;
+						thetaBufferHi = omega + acos( ( saddleRadius - bufferIJ ) / probeRad ) ;
 					}
 				else if( thetaSelfLo > thetaMax && thetaSelfHi > thetaMax )
 					{
 						selfIntersection = NO ;
 						
-						bufferI = -1. ;
-						bufferJ = -1. ;
 						bufferIJ = -1. ;
 						
-						thetaBufferI = -1. ;
-						thetaBufferJ = -1. ;
+						thetaBufferLo = -1. ;
+						thetaBufferHi = -1. ;
 					}
 				else
 					{

@@ -65,17 +65,12 @@
 	
 	BOOL skip ;
 	
-	// Collapse this arc with another? (FORGET THIS)
 	
-	//SMArc *collapseArc ;
+	BOOL touchLimitPlane ;
 	
+	// Intersects with limit plane - thetaLPStart is closest to startU, thetaLPEnd closest to endU
 	
-	BOOL useLimitPlane ;
-	MMVector3 *limitPlanePoint, *limitPlaneNormal ;
-	
-	// Intersects with limit plane - lpStart is closest to startU, lpEnd closest to endU
-	
-	MMVector3 *lpStart, *lpEnd ;
+	double thetaLPStart, thetaLPEnd ;
 	
 	//int startVertexIndex, endVertexIndex ;
 	
