@@ -184,13 +184,13 @@
 						
 						// FOR SIMPLICITY, I am going to use one buffer value, the minimum of bufferI and bufferJ
 						
-						if( bufferI < bufferJ )
+						if( heightI < heightJ )
 							{
-								heightIJ = bufferI ;
+								heightIJ = heightI ;
 							}
 						else
 							{
-								heightIJ = bufferJ ;
+								heightIJ = heightJ ;
 							}
 					
 						bufferIJ = heightIJ/2. ;
@@ -212,12 +212,8 @@
 						printf( "WARNING: SELF-INTERSECTION ANGLE RANGE COMPUTATION BROKEN IN SADDLE INITIALIZATION!\n" ) ;
 						selfIntersection = NO ;
 						
-						bufferI = -1. ;
-						bufferJ = -1. ;
 						bufferIJ = -1. ;
 						
-						thetaBufferI = -1. ;
-						thetaBufferJ = -1. ;
 					}
 			}
 				

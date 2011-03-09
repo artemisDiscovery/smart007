@@ -30,9 +30,9 @@
 	
 	MMVector3 *planeCenter, *planeNormal ;
 	
-	double bufferHeight, probeHeight ;
+	double minHeight, bufferHeight, probeHeight ;
 	
-@public
+
 
 	BOOL selfIntersection ;
 	BOOL bordersSelfintersectingTorus ;

@@ -202,15 +202,14 @@
 		
 		arcEnumerator = [ arcs objectEnumerator ] ;
 		
-		double projBufferMin ;
+		double projHeightMin ;
 		
-		projBufferMin = 1.e6 ; 
+		projHeightMin = 1.e6 ; 
 		
 		while( ( nextArc = [ arcEnumerator nextObject ] ) )
 			{
 				SMTorus *torus = [ nextArc torusSection ] ;
-				
-				if( torus->bufferIJ <= 0. ) continue ;
+			
 				
 				dx = [ planeCenter X ] - [ [ torus base ] X ] ;
 				dy = [ planeCenter Y ] - [ [ torus base ] Y ] ;
@@ -220,68 +219,139 @@
 				
 				double r = sqrt( b*b + probeHeight*probeHeight ) ;
 				
-				double projBuffer = (probeHeight/r)*(torus->bufferIJ ) ;
-				
-				if( projBuffer < projBufferMin )
+				double projHeight ;
+			
+				if (torus->bufferIJ > 0. ) {
+					projHeight = (probeHeight/r)*(torus->bufferIJ ) ;
+				}
+				else {
+					projHeight = (probeHeight/r)*(torus->heightIJ ) ;
+				}
+
+				if( projHeight < projHeightMin )
 					{
-						projBufferMin = projBuffer ;
+						projHeightMin = projHeight ;
 					}
 			}
 			
-		if( projBufferMin == 1.e6)
+				
+		bufferHeight = projHeightMin / 2 ;
+				
+		// BUT is this self-interecting or not?
+		
+		if( probeHeight < mol->probeRadius )
 			{
-				// No selfintersecting tori!
-				
-				//bufferHeight = probeHeight - mol->probeRadius ;
-				
-				// Find the height of each probe-atom contact above the plane, and take 1/2 the
-				// minimum as the buffer height
-				
-				NSEnumerator *atomEnumerator = [ cycleAtoms objectEnumerator ] ;
-				
-				int nextAtomIndex ; NSNumber *nextAtomNumber ;
-				
-				double minHeight = 1.e6 ;
-				double height ;
-				
-				disp = [ [ MMVector3 alloc ] initX:0. Y:0. Z:0. ] ;
-				
-				while( ( nextAtomNumber = [ atomEnumerator nextObject ] ) ) 
-					{
-						nextAtomIndex = [ nextAtomNumber intValue ] ;
-						
-						[ disp setX:( ( mol->xAtom[nextAtomIndex] - [ cycleProbe X ])*(mol->probeRadius/(mol->probeRadius + mol->radii[nextAtomIndex])) ) ] ;
-						[ disp setY:( ( mol->yAtom[nextAtomIndex] - [ cycleProbe Y ])*(mol->probeRadius/(mol->probeRadius + mol->radii[nextAtomIndex])) ) ] ;
-						[ disp setZ:( ( mol->zAtom[nextAtomIndex] - [ cycleProbe Z ])*(mol->probeRadius/(mol->probeRadius + mol->radii[nextAtomIndex])) ) ] ;
-						
-						height = fabs( [ disp dotWith:planeNormal ] ) ;
-						
-						if( height < minHeight ) minHeight = height ;
-						
-						
+				selfIntersection = YES ;
+			
+				// Compute theta values for limit-plane intersection
+			
+				// This is based on a rather complicated diagram that I will verbally describe - 
+				// We are computing the line of intesection between the plane described by the arc normal and 
+				// the limit plane (which lies distance 'h' below the probe center 'C' ). As the arc traces out its path, there 
+				// are three points of interest: p1 = first intersection with limit plane, p2 = second, m = midpoint between p1 and p2,
+				// on the line of intersection between the planes. 
+				// 'a' is the arc normal ; if the "official" arc normal has negative inner product with limit plane normal, a is the reverse
+				// 'omega' is the angle between limit plane normal and 'a' ( < 90 deg)
+				// 'phi' is angle between arc ray that passes through 'm' and the limit plane perpendicular ; phi = 180 - 90 - omega = 90 - omega
+				// Accessory variables :
+				// t = displacement from limit plane center to midpoint m : t = h*tan(phi)
+				// w = displacement from probe center to 'm' along arc ray : w = sqrt( h^2 + t^2 )
+				// Delta = displacement along line of intersection from m to p1 or p2 : Delta = sqrt( probeRad^2 - w^2 )
+				//
+				// Make local coord system : Nlp (limit plane normal), e = a (schmit ortho to ) Nlp , f = Nlp X e
+				// Then in global coords, 
+				// p1 = C - h*Nlp + t*e - Delta*f
+				// p2 = C - h*Nlp + t*e + Delta*f
+				//
+				// NOTE that if Rp cos(phi) <= h there is no intersection between the arc plane and the limit plane
+			
+				MMVector3 *A, *E, *F, *p1, *p2 ;
+			
+				for( SMArc *nextArc in arcs ) {
+					
+					A = [ [ MMVector3 alloc ] initUsingVector:nextArc->arcAxis ] ;
+					
+					if ( [ planeNormal dotWith:nextArc->arcAxis ] < 0. ) {
+						[ A reverse ] ; 
 					}
 					
-				[ disp release ] ;
-				
-				// bufferHeight = probeHeight / 2 ;  // This is not optimal
-				
-				bufferHeight = minHeight / 2 ;
-				
-				// BUT is this self-interecting or not?
-				
-				if( probeHeight < mol->probeRadius )
-					{
-						selfIntersection = YES ;
+					double omega = acos([ A dotWith:planeNormal ]) ;
+					double phi = acos(-1.)/2. - omega ;
+					
+					if ( mol->probeRadius*cos(phi) <= probeHeight ) {
+						[ A release ] ;
+						continue ;
 					}
-				
+					
+					double t = probeHeight * tan(phi) ;
+					double w = sqrt(probeHeight*probeHeight + t*t ) ;
+					
+					double delta = sqrt(mol->probeRadius*mol->probeRadius - w*w ) ;
+					
+					E = [ [ MMVector3 alloc ] initAlong:A perpTo:planeNormal ] ;
+					F = [ [ MMVector3 alloc ] initByCrossing:planeNormal and:E ] ;
+					
+					double dx = [ cycleProbe X ] - probeHeight * [ planeNormal X ] + t * [ E X ] - delta * [ F X ] ;
+					double dy = [ cycleProbe Y ] - probeHeight * [ planeNormal Y ] + t * [ E Y ] - delta * [ F Y ] ;
+					double dz = [ cycleProbe Z ] - probeHeight * [ planeNormal Z ] + t * [ E Z ] - delta * [ F Z ] ;
+					
+					
+					p1 = [ [ MMVector3 alloc ] initX:dx Y:dy Z:dz ] ;
+					
+					// Other side 
+					dx = dx + 2.*delta*[ F X ] ;
+					dy = dy + 2.*delta*[ F Y ] ;
+					dz = dz + 2.*delta*[ F Z ] ;
+					
+					p2 = [ [ MMVector3 alloc ] initX:dx Y:dy Z:dz ] ;
+					
+					// Convert to displacement from probe center
+					
+					[ p1 setX:( [ p1 X ] - [ nextArc->arcCenter X ] ) ] ;
+					[ p1 setY:( [ p1 Y ] - [ nextArc->arcCenter Y ] ) ] ;
+					[ p1 setZ:( [ p1 Z ] - [ nextArc->arcCenter Z ] ) ] ;
+					
+					[ p1 normalize ] ;
+					
+					[ p2 setX:( [ p2 X ] - [ nextArc->arcCenter X ] ) ] ;
+					[ p2 setY:( [ p2 Y ] - [ nextArc->arcCenter Y ] ) ] ;
+					[ p2 setZ:( [ p2 Z ] - [ nextArc->arcCenter Z ] ) ] ;
+					
+					[ p2 normalize ] ;
+					
+					double t1 = acos([ nextArc->startU dotWith:p1 ]) ;
+					double t2 = acos([ nextArc->startU dotWith:p2 ]) ;
+					
+					if (t1 < t2 ) {
+						nextArc->thetaLPStart = t1 ;
+						nextArc->thetaLPEnd = t2 ;
+					}
+					else {
+						nextArc->thetaLPStart = t2 ;
+						nextArc->thetaLPEnd = t1 ;
+					}
+					
+					// Sanity check
+					
+					if (nextArc->thetaLPStart < 0. || nextArc->thetaLPEnd < 0. ||
+						nextArc->thetaLPStart > nextArc->torusSection->thetaMax || nextArc->thetaLPEnd > nextArc->torusSection->thetaMax) {
+						printf("LIMIT PLANE CONSTRUCTION FAILED - Could not assign arc-limit plane interctions - Exit!\n" );
+						exit(1) ;
+					}
+					
+					
+					
+				[ A release ] ;
+				[ E release ] ;
+				[ F release ] ;
+				[ p1 release ] ;
+				[ p2 release ] ;
+					
+					
+				}
+			
 			}
-		else
-			{
-				bufferHeight = projBufferMin ;
-				
-				selfIntersection = YES ;
-			}
-		
+						
 		return self ;
 	}
 	
