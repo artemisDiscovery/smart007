@@ -5534,6 +5534,7 @@ PROCESS_FREE_TORI:
 		// find next cycle (currentCycle) > 3
 		// START:
 		//		M = # arcs in cycle
+		//		If cycle assoc with self-intersecting limit plane - for each arc, subdivide in accordance with any intersections
 		//	
 		//		tryArcs = {} 
 		//		
@@ -6938,7 +6939,57 @@ PROCESS_FREE_TORI:
 		return ;
 	}
 		
+	
+- (void) subdivideArc:(SMArc *)a usingLimitPlane:(SMLimitPlane *)plane
+	{
 		
+		// This method divides an arc into multiple parts, while maintaining reference to its parent cycles
+		// This method takes into account that the argument arc might be twinned, and calls a helper method
+	
+		// Division points are determined by intersection with limit plane
+		
+		// It also provides special handling for saddle arcs
+		
+		NSArray *newArcs, *newTwinArcs ;
+		SMArc *theTwin ;
+		
+		if( ( theTwin = [ a twin ] ) )
+			{
+				newArcs = [ self subdivideTheArc:a usingLimitPlane:plane ] ;
+				newTwinArcs = [ self subdivideTheArc:theTwin usingLimitPlane:plane ] ;
+				
+				if( ! newArcs ) return ;
+				
+				// These are expected to have opposite (geometrical) orientations
+				
+				int i, M ; 
+				
+				// Sanity check
+				
+				if( ( M = [ newArcs count ] ) != [ newTwinArcs count ] )
+					{
+					printf( "TWINNED ARCS SUBDIVIDE UNEQUALLY - Exit!\n" ) ;
+					exit(1) ;
+					}
+				
+				for( i = 0 ; i < M ; ++i )
+					{
+					[ [ newArcs objectAtIndex:i ] setTwin:[ newTwinArcs objectAtIndex:(M - 1 - i) ] ] ;
+					[ [ newTwinArcs objectAtIndex:(M - 1 - i) ] setTwin:[ newArcs objectAtIndex:i ] ] ;
+					}
+				
+				[ newArcs release ] ;
+				[ newTwinArcs release ] ;
+			}
+		else
+			{
+				newArcs = [ self subdivideTheArc:a usingDivision:div ] ;
+				[ newArcs release ] ;
+			}
+		
+		return ;
+	}
+
 - (NSArray *) subdivideTheArc:(SMArc *)a usingDivision:(double) div
 	{
 		NSMutableArray *newArcs ;
@@ -7136,6 +7187,205 @@ PROCESS_FREE_TORI:
 			
 		return newArcs ;
 	}
+
+- (NSArray *) subdivideTheArc:(SMArc *)a usingLimitPlane:(SMLimitPlane *) plane
+	{
+		NSMutableArray *newArcs ;
+		
+		double deltaAngle, endAngle ;
+		
+		int nDiv, iDiv ;
+		
+		
+		MMVector3 *endVector, *startU, *endU ;
+		
+		SMVertex *startVertex, *endVertex ;
+		
+		double phi1, theta1, phi2, theta2, deltaTheta, deltaPhi ;
+		
+		nDiv = (int) floor( [ a length ] / div ) ;
+		
+		if( nDiv < 2 ) return nil ;
+		
+		newArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
+		
+		// Note - use saddle-type subdivision on reentrant arcs (reentrantR and reentrantL) to handle self-intersecting surface
+		
+		if( [ a arcType ] != 5  )
+			{
+			
+			deltaAngle = [ a angle ] / nDiv ;
+			
+			if( [ a torusSection ] )
+				{
+				deltaPhi = ([ a phiEnd ] - [ a phiStart ])/nDiv ;
+				deltaTheta = ([ a thetaEnd ] - [ a thetaStart ])/nDiv ;
+				}
+			
+			
+			for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+				{
+				endAngle = ( iDiv + 1 ) * deltaAngle ;
+				
+				double dx, dy, dz ;
+				
+				dx = cos(endAngle)*[ [ a startU ] X ] + sin(endAngle)*[ [ a uPerp ] X ] ;
+				dy = cos(endAngle)*[ [ a startU ] Y ] + sin(endAngle)*[ [ a uPerp ] Y ] ;
+				dz = cos(endAngle)*[ [ a startU ] Z ] + sin(endAngle)*[ [ a uPerp ] Z ] ;
+				
+				if( iDiv < (nDiv - 1) )
+					{
+					endVector = [ [ MMVector3 alloc ] initX:dx Y:dy Z:dz ] ;
+					
+					[ endVector normalize ] ;
+					}
+				
+				if( iDiv == 0 )
+					{
+					startU = [ a startU ] ;
+					endU = endVector ;
+					
+					startVertex = [ a startVertex ] ;
+					endVertex = nil ;
+					}
+				else if( iDiv < nDiv - 1 )
+					{
+					startU = [ [ newArcs lastObject ] endU ] ;
+					endU = endVector ;
+					
+					startVertex = nil ;
+					endVertex = nil ;
+					}
+				else	
+					{
+					startU = [ [ newArcs lastObject ] endU ] ;
+					endU = [ a endU ] ;
+					
+					startVertex = nil ;
+					endVertex = [ a endVertex ] ;
+					}
+				
+				SMArc *copyArc ;
+				
+				copyArc = [ a copyArc ] ;
+				
+				[ copyArc setStartU:startU ] ;
+				[ copyArc setEndU:endU ] ;
+				
+				[ copyArc setStartVertex:startVertex ] ;
+				[ copyArc setEndVertex:endVertex ] ;
+				
+				[ copyArc restoreVectorsAndAngle ] ;
+				
+				if( [ a torusSection ] )
+					{
+					phi1 = [ a phiStart ] + iDiv*deltaPhi ;
+					theta1 = [ a thetaStart ] + iDiv*deltaTheta ;
+					
+					phi2 = phi1 + deltaPhi ;
+					theta2 = theta1 + deltaTheta ;
+					
+					[ copyArc setPhiStart:phi1 ] ;
+					[ copyArc setThetaStart:theta1 ] ;
+					
+					[ copyArc setPhiEnd:phi2 ] ;
+					[ copyArc setThetaEnd:theta2 ] ;
+					
+					}
+				
+				
+				[ newArcs addObject:copyArc ] ;
+				
+				if( iDiv < (nDiv - 1) )
+					{
+					[ endVector release ] ;
+					}
+				
+				
+				}
+			}
+		else
+			{	
+				deltaTheta = ([ a thetaEnd ] - [ a thetaStart ])/nDiv  ;
+				deltaPhi =   ([ a phiEnd ] - [ a phiStart ])/nDiv ;
+				
+				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+					{
+					SMArc *newSaddleArc ;
+					
+					phi1 = [ a phiStart ] + iDiv*deltaPhi ;
+					theta1 = [ a thetaStart ] + iDiv*deltaTheta ;
+					
+					phi2 = phi1 + deltaPhi ;
+					theta2 = theta1 + deltaTheta ;
+					
+					newSaddleArc = [ [ SMArc alloc ] initWithTorusSection:[ a torusSection ]
+																 molecule:self phiStart:phi1 thetaStart:theta1 phiEnd:phi2 thetaEnd:theta2 ] ;
+					
+					[ newArcs addObject:newSaddleArc ] ;
+					}
+				
+			}
+		
+		
+		
+		// Adjust cycles. I will do this the obvious way, by removing and inserting arcs
+		
+		int iCycle ;
+		
+		for( iCycle = 0 ; iCycle < [ [ a parentCycles ] count ] ; ++iCycle )
+			{
+			SMCycle *theParent ;
+			
+			theParent = [ [ a parentCycles ] objectAtIndex:iCycle ] ;
+			
+			int aIndex = [ [ theParent arcs ] indexOfObject:a ] ;
+			
+			BOOL forward ; 
+			
+			forward = [ [ [ theParent forward ] objectAtIndex:aIndex ] boolValue ] ;
+			
+			if( forward == YES )
+				{
+				[ [ theParent arcs ] removeObjectAtIndex:aIndex ] ;
+				[ [ theParent forward ] removeObjectAtIndex:aIndex ] ;
+				
+				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+					{
+					[ [ theParent arcs ] insertObject:[ newArcs objectAtIndex:iDiv ] atIndex:(aIndex + iDiv) ] ;
+					[ [ theParent forward ] insertObject:[ NSNumber numberWithBool:YES ] atIndex:(aIndex + iDiv) ] ;
+					}
+				}
+			else
+				{
+				
+				[ [ theParent arcs ] removeObjectAtIndex:aIndex ] ;
+				[ [ theParent forward ] removeObjectAtIndex:aIndex ] ;
+				
+				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+					{
+					[ [ theParent arcs ] insertObject:[ newArcs objectAtIndex:(nDiv - iDiv - 1) ] atIndex:(aIndex + iDiv) ] ;
+					[ [ theParent forward ] insertObject:[ NSNumber numberWithBool:NO ] atIndex:(aIndex + iDiv) ] ;
+					}
+				
+				}
+			
+			}
+		
+		// Check if we have torus to update
+		
+		SMTorus *theTorus ;
+		
+		if( ( theTorus = [ a torusSection ] ) != nil && [ a arcType ] != 5  )
+			{				
+				[ theTorus registerArcs:newArcs parentArc:a ] ;
+			}
+		
+		//[ newArcs release ] ;
+		
+		return newArcs ;
+	}
+
 	
 - (NSArray *)  subdivideCycle:(SMCycle *)cyc firstIndex:(int)start
 					secondIndex:(int)second usingArc:(SMArc *)arc

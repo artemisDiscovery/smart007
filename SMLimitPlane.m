@@ -237,7 +237,7 @@
 				
 		bufferHeight = projHeightMin / 2 ;
 				
-		// BUT is this self-interecting or not?
+		// BUT is this self-intersecting or not?
 		
 		if( probeHeight < mol->probeRadius )
 			{
@@ -245,12 +245,12 @@
 			
 				// Compute theta values for limit-plane intersection
 			
-				// This is based on a rather complicated diagram that I will verbally describe - 
+				// This is based on a rather complicated diagram that I will "verbally" describe - 
 				// We are computing the line of intesection between the plane described by the arc normal and 
 				// the limit plane (which lies distance 'h' below the probe center 'C' ). As the arc traces out its path, there 
 				// are three points of interest: p1 = first intersection with limit plane, p2 = second, m = midpoint between p1 and p2,
-				// on the line of intersection between the planes. 
-				// 'a' is the arc normal ; if the "official" arc normal has negative inner product with limit plane normal, a is the reverse
+				// all on the line of intersection between the planes. 
+				// 'a' is the arc normal ; if the "official" arc normal has negative inner product with limit plane normal, a is the reverse ;
 				// 'omega' is the angle between limit plane normal and 'a' ( < 90 deg)
 				// 'phi' is angle between arc ray that passes through 'm' and the limit plane perpendicular ; phi = 180 - 90 - omega = 90 - omega
 				// Accessory variables :
@@ -319,16 +319,18 @@
 					
 					[ p2 normalize ] ;
 					
+					double sgn = nextArc->thetaEnd > nextArc->thetaStart ? 1. : -1. ;
+					
 					double t1 = acos([ nextArc->startU dotWith:p1 ]) ;
 					double t2 = acos([ nextArc->startU dotWith:p2 ]) ;
 					
 					if (t1 < t2 ) {
-						nextArc->thetaLPStart = t1 ;
-						nextArc->thetaLPEnd = t2 ;
+						nextArc->thetaLPStart = thetaStart + sgn * t1 ;
+						nextArc->thetaLPEnd = thetaStart + sgn * t2 ;
 					}
 					else {
-						nextArc->thetaLPStart = t2 ;
-						nextArc->thetaLPEnd = t1 ;
+						nextArc->thetaLPStart = thetaStart + sgn * t2 ;
+						nextArc->thetaLPEnd = thetaStart + sgn * t1 ;
 					}
 					
 					// Sanity check

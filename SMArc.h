@@ -66,7 +66,7 @@
 	BOOL skip ;
 	
 	
-	BOOL touchLimitPlane ;
+	BOOL startTouchLimitPlane, endTouchLimitPlane ;
 	
 	// Intersects with limit plane - thetaLPStart is closest to startU, thetaLPEnd closest to endU
 	

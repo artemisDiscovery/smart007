@@ -35,7 +35,8 @@
 		
 		length = angle = 0.  ;
 		
-		touchLimitPlane = NO ;
+		startTouchLimitPlane = NO ;
+		endTouchLimitPlane = NO ;
 	
 		thetaLPStart = -1. ;
 		thetaLPEnd = -1. ;
@@ -115,7 +116,8 @@
 		
 		arcCopy->skip = skip ;
 		
-		arcCopy->touchLimitPlane = touchLimitPlane ;
+		arcCopy->startTouchLimitPlane = startTouchLimitPlane ;
+		arcCopy->endTouchLimitPlane = endTouchLimitPlane ;
 	
 		arcCopy->thetaLPStart = thetaLPStart ;
 		arcCopy->thetaLPEnd = thetaLPEnd ;
@@ -335,7 +337,8 @@
 		
 		length = angle = 0.  ;
 		
-		touchLimitPlane = NO ;
+		startTouchLimitPlane = NO ;
+		endTouchLimitPlane = NO ;
 		thetaLPStart = -1. ;
 		thetaLPEnd = -1. ;
 	
