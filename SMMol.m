@@ -6933,6 +6933,9 @@ PROCESS_FREE_TORI:
 		else
 			{
 				newArcs = [ self subdivideTheArc:a usingDivision:div ] ;
+				if (! newArcs ) {
+					return ;
+				}
 				[ newArcs release ] ;
 			}
 			
@@ -6984,7 +6987,62 @@ PROCESS_FREE_TORI:
 		else
 			{
 				newArcs = [ self subdivideTheArc:a usingDivision:div ] ;
+				if (! newArcs ) {
+					return ;
+				}
 				[ newArcs release ] ;
+			}
+		
+		return ;
+	}
+
+- (void) subdivideWithBufferArc:(SMArc *)a 
+	{
+		
+		// This method divides an arc into multiple parts, while maintaining reference to its parent cycles
+		// This method takes into account that the argument arc might be twinned, and calls a helper method
+		
+		// Division points are determined by intersection with torus buffer - this method is only for arcs in saddle section with 
+		// "self-intersecting" surface
+		
+		NSArray *newArcs, *newTwinArcs ;
+		SMArc *theTwin ;
+		
+		if( ( theTwin = [ a twin ] ) )
+			{
+			newArcs = [ self subdivideWithBufferTheArc:a  ] ;
+			newTwinArcs = [ self subdivideWithBufferTheArc:theTwin ] ;
+			
+			if( ! newArcs ) return ;
+			
+			// These are expected to have opposite (geometrical) orientations
+			
+			int i, M ; 
+			
+			// Sanity check
+			
+			if( ( M = [ newArcs count ] ) != [ newTwinArcs count ] )
+				{
+				printf( "TWINNED ARCS SUBDIVIDE UNEQUALLY - Exit!\n" ) ;
+				exit(1) ;
+				}
+			
+			for( i = 0 ; i < M ; ++i )
+				{
+				[ [ newArcs objectAtIndex:i ] setTwin:[ newTwinArcs objectAtIndex:(M - 1 - i) ] ] ;
+				[ [ newTwinArcs objectAtIndex:(M - 1 - i) ] setTwin:[ newArcs objectAtIndex:i ] ] ;
+				}
+			
+			[ newArcs release ] ;
+			[ newTwinArcs release ] ;
+			}
+		else
+			{
+			newArcs = [ self subdivideTheArc:a usingDivision:div ] ;
+			if (! newArcs ) {
+				return ;
+			}
+			[ newArcs release ] ;
 			}
 		
 		return ;
@@ -7004,6 +7062,7 @@ PROCESS_FREE_TORI:
 		SMVertex *startVertex, *endVertex ;
 		
 		double phi1, theta1, phi2, theta2, deltaTheta, deltaPhi ;
+		
 		
 		nDiv = (int) floor( [ a length ] / div ) ;
 		
@@ -7191,78 +7250,90 @@ PROCESS_FREE_TORI:
 - (NSArray *) subdivideTheArc:(SMArc *)a usingLimitPlane:(SMLimitPlane *) plane
 	{
 		NSMutableArray *newArcs ;
-		
-		double deltaAngle, endAngle ;
-		
-		int nDiv, iDiv ;
-		
+	
+		// Check if we are already touching limit plane - 
+	
+		if (a->startTouchLimit == YES || a->endTouchLimit == YES ) {
+			return nil ;
+		}
+	
+		// Check if we in fact intersect the limit plane - 
+	
+		if (a->angleLPStart < 0. ) {
+			return nil ;
+		}
+	
+	
+		double endAngles[3], startAngles[3], endAngle, startAngle ;
+	
+		startAngles[0] = 0. ;
+		startAngles[1] = a->angleLPStart ;
+		startAngles[2] = a->angleLPEnd ;
+	
+		endAngles[0] = a->angleLPStart ;
+		endAngles[1] = a->angleLPEnd ;
+		endAngles[2] = a->angle ;
 		
 		MMVector3 *endVector, *startU, *endU ;
 		
 		SMVertex *startVertex, *endVertex ;
 		
-		double phi1, theta1, phi2, theta2, deltaTheta, deltaPhi ;
-		
-		nDiv = (int) floor( [ a length ] / div ) ;
-		
-		if( nDiv < 2 ) return nil ;
+		BOOL startTouch, endTouch ;
 		
 		newArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
+	
 		
-		// Note - use saddle-type subdivision on reentrant arcs (reentrantR and reentrantL) to handle self-intersecting surface
-		
-		if( [ a arcType ] != 5  )
-			{
-			
-			deltaAngle = [ a angle ] / nDiv ;
-			
-			if( [ a torusSection ] )
+						
+			for( iDiv = 0 ; iDiv < 3 ; ++iDiv )
 				{
-				deltaPhi = ([ a phiEnd ] - [ a phiStart ])/nDiv ;
-				deltaTheta = ([ a thetaEnd ] - [ a thetaStart ])/nDiv ;
-				}
-			
-			
-			for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
-				{
-				endAngle = ( iDiv + 1 ) * deltaAngle ;
+					endAngle = endAngles[iDiv] ;
+					startAngle = startAngles[iDiv] ;
 				
-				double dx, dy, dz ;
-				
-				dx = cos(endAngle)*[ [ a startU ] X ] + sin(endAngle)*[ [ a uPerp ] X ] ;
-				dy = cos(endAngle)*[ [ a startU ] Y ] + sin(endAngle)*[ [ a uPerp ] Y ] ;
-				dz = cos(endAngle)*[ [ a startU ] Z ] + sin(endAngle)*[ [ a uPerp ] Z ] ;
-				
-				if( iDiv < (nDiv - 1) )
-					{
-					endVector = [ [ MMVector3 alloc ] initX:dx Y:dy Z:dz ] ;
+					double dx, dy, dz ;
 					
-					[ endVector normalize ] ;
-					}
+					dx = cos(endAngle)*[ [ a startU ] X ] + sin(endAngle)*[ [ a uPerp ] X ] ;
+					dy = cos(endAngle)*[ [ a startU ] Y ] + sin(endAngle)*[ [ a uPerp ] Y ] ;
+					dz = cos(endAngle)*[ [ a startU ] Z ] + sin(endAngle)*[ [ a uPerp ] Z ] ;
+				
+					if( iDiv < 2 )
+						{
+							endVector = [ [ MMVector3 alloc ] initX:dx Y:dy Z:dz ] ;
+						
+							[ endVector normalize ] ;
+						}
 				
 				if( iDiv == 0 )
 					{
-					startU = [ a startU ] ;
-					endU = endVector ;
-					
-					startVertex = [ a startVertex ] ;
-					endVertex = nil ;
+						startU = [ a startU ] ;
+						endU = endVector ;
+						
+						startVertex = [ a startVertex ] ;
+						endVertex = nil ;
+						
+						startTouch = NO ;
+						endTouch = YES ;
 					}
-				else if( iDiv < nDiv - 1 )
+				else if( iDiv < 2 )
 					{
-					startU = [ [ newArcs lastObject ] endU ] ;
-					endU = endVector ;
-					
-					startVertex = nil ;
-					endVertex = nil ;
+						startU = [ [ newArcs lastObject ] endU ] ;
+						endU = endVector ;
+						
+						startVertex = nil ;
+						endVertex = nil ;
+						
+						startTouch = YES ;
+						endTouch = YES ;
 					}
 				else	
 					{
-					startU = [ [ newArcs lastObject ] endU ] ;
-					endU = [ a endU ] ;
-					
-					startVertex = nil ;
-					endVertex = [ a endVertex ] ;
+						startU = [ [ newArcs lastObject ] endU ] ;
+						endU = [ a endU ] ;
+						
+						startVertex = nil ;
+						endVertex = [ a endVertex ] ;
+						
+						startTouch = YES ;
+						endTouch = NO ;
 					}
 				
 				SMArc *copyArc ;
@@ -7275,59 +7346,42 @@ PROCESS_FREE_TORI:
 				[ copyArc setStartVertex:startVertex ] ;
 				[ copyArc setEndVertex:endVertex ] ;
 				
+				copyArc->startTouchLimit = startTouch ;
+				copyArc->endTouchLimit = endTouch ;
+				
 				[ copyArc restoreVectorsAndAngle ] ;
+				
+				// This section should NEVER be executed, assuming that the arcs that bound the cycle are subdivided using
+				// subdivideWithBufferArc:
 				
 				if( [ a torusSection ] )
 					{
-					phi1 = [ a phiStart ] + iDiv*deltaPhi ;
-					theta1 = [ a thetaStart ] + iDiv*deltaTheta ;
-					
-					phi2 = phi1 + deltaPhi ;
-					theta2 = theta1 + deltaTheta ;
-					
-					[ copyArc setPhiStart:phi1 ] ;
-					[ copyArc setThetaStart:theta1 ] ;
-					
-					[ copyArc setPhiEnd:phi2 ] ;
-					[ copyArc setThetaEnd:theta2 ] ;
+						double sgn = [ a thetaEnd ] > [ a thetaStart ] ? 1. : -1. ;
+						
+						phi1 = [ a phiStart ]  ;
+						theta1 = [ a thetaStart ] + sgn*startAngle ;
+						
+						phi2 = phi1 ;
+						theta2 = [ a thetaStart ] + sgn*endAngle ;
+						
+						[ copyArc setPhiStart:phi1 ] ;
+						[ copyArc setThetaStart:theta1 ] ;
+						
+						[ copyArc setPhiEnd:phi2 ] ;
+						[ copyArc setThetaEnd:theta2 ] ;
 					
 					}
 				
 				
 				[ newArcs addObject:copyArc ] ;
 				
-				if( iDiv < (nDiv - 1) )
+				if( iDiv < 2 )
 					{
-					[ endVector release ] ;
+						[ endVector release ] ;
 					}
 				
 				
 				}
-			}
-		else
-			{	
-				deltaTheta = ([ a thetaEnd ] - [ a thetaStart ])/nDiv  ;
-				deltaPhi =   ([ a phiEnd ] - [ a phiStart ])/nDiv ;
-				
-				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
-					{
-					SMArc *newSaddleArc ;
-					
-					phi1 = [ a phiStart ] + iDiv*deltaPhi ;
-					theta1 = [ a thetaStart ] + iDiv*deltaTheta ;
-					
-					phi2 = phi1 + deltaPhi ;
-					theta2 = theta1 + deltaTheta ;
-					
-					newSaddleArc = [ [ SMArc alloc ] initWithTorusSection:[ a torusSection ]
-																 molecule:self phiStart:phi1 thetaStart:theta1 phiEnd:phi2 thetaEnd:theta2 ] ;
-					
-					[ newArcs addObject:newSaddleArc ] ;
-					}
-				
-			}
-		
-		
 		
 		// Adjust cycles. I will do this the obvious way, by removing and inserting arcs
 		
@@ -7347,25 +7401,25 @@ PROCESS_FREE_TORI:
 			
 			if( forward == YES )
 				{
-				[ [ theParent arcs ] removeObjectAtIndex:aIndex ] ;
-				[ [ theParent forward ] removeObjectAtIndex:aIndex ] ;
+					[ [ theParent arcs ] removeObjectAtIndex:aIndex ] ;
+					[ [ theParent forward ] removeObjectAtIndex:aIndex ] ;
 				
-				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+				for( iDiv = 0 ; iDiv < 3 ; ++iDiv )
 					{
-					[ [ theParent arcs ] insertObject:[ newArcs objectAtIndex:iDiv ] atIndex:(aIndex + iDiv) ] ;
-					[ [ theParent forward ] insertObject:[ NSNumber numberWithBool:YES ] atIndex:(aIndex + iDiv) ] ;
+						[ [ theParent arcs ] insertObject:[ newArcs objectAtIndex:iDiv ] atIndex:(aIndex + iDiv) ] ;
+						[ [ theParent forward ] insertObject:[ NSNumber numberWithBool:YES ] atIndex:(aIndex + iDiv) ] ;
 					}
 				}
 			else
 				{
 				
-				[ [ theParent arcs ] removeObjectAtIndex:aIndex ] ;
-				[ [ theParent forward ] removeObjectAtIndex:aIndex ] ;
+					[ [ theParent arcs ] removeObjectAtIndex:aIndex ] ;
+					[ [ theParent forward ] removeObjectAtIndex:aIndex ] ;
 				
-				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+				for( iDiv = 0 ; iDiv < 3 ; ++iDiv )
 					{
-					[ [ theParent arcs ] insertObject:[ newArcs objectAtIndex:(nDiv - iDiv - 1) ] atIndex:(aIndex + iDiv) ] ;
-					[ [ theParent forward ] insertObject:[ NSNumber numberWithBool:NO ] atIndex:(aIndex + iDiv) ] ;
+						[ [ theParent arcs ] insertObject:[ newArcs objectAtIndex:(nDiv - iDiv - 1) ] atIndex:(aIndex + iDiv) ] ;
+						[ [ theParent forward ] insertObject:[ NSNumber numberWithBool:NO ] atIndex:(aIndex + iDiv) ] ;
 					}
 				
 				}
@@ -7376,17 +7430,333 @@ PROCESS_FREE_TORI:
 		
 		SMTorus *theTorus ;
 		
-		if( ( theTorus = [ a torusSection ] ) != nil && [ a arcType ] != 5  )
+		if( ( theTorus = [ a torusSection ] ) != nil  )
 			{				
 				[ theTorus registerArcs:newArcs parentArc:a ] ;
 			}
 		
-		//[ newArcs release ] ;
-		
 		return newArcs ;
 	}
 
+- (NSArray *) subdivideWithBufferTheArc:(SMArc *)a 
+{
+	NSMutableArray *newArcs ;
 	
+	// Check if we are already touching buffer region - 
+	
+	if (a->startTouchLimit == YES || a->endTouchLimit == YES ) {
+		return nil ;
+	}
+	
+	// Check if we in fact intersect the buffer zone - I am going to assume that we need to check for 0, 1 or 2 intersections
+	
+	if ( ( a->thetaStart < a->torusSection->thetaBufferLo && a->thetaEnd < a->torusSection->thetaBufferLo) ||
+		 ( a->thetaStart > a->torusSection->thetaBufferHi && a->thetaEnd > a->torusSection->thetaBufferHi) ) {
+		return nil ;
+	}
+	
+	BOOL startInBuffer, endInBuffer ;
+	
+	if (a->torusSection->thetaBufferLo <= a->thetaStart &&  a->thetaStart <= a->torusSection->thetaBufferHi ) {
+		startInBuffer = YES  ;
+	}
+	else {
+		startInBuffer = NO ;
+	}
+
+	if (a->torusSection->thetaBufferLo <= a->thetaEnd &&  a->thetaEnd <= a->torusSection->thetaBufferHi ) {
+		endInBuffer = YES  ;
+	}
+	else {
+		endInBuffer = NO ;
+	}
+	
+	double endThetas[3], startThetas[3], endPhis[3], startPhis[3], endTheta, startTheta, endPhi, startPhi ;
+	BOOL endTouches[3], startTouches[3], startTouch, endTouch ;
+	
+	double tBuffStart, tBuffEnd ;
+	
+	int nDiv, iDiv, k ;
+	
+	double sign = a->thetaStart < a->thetaEnd ? 1. : -1. ;
+	
+	if (sign > 0.) {
+		tBuffStart = a->torusSection->thetaBufferLo ;
+		tBuffEnd = a->torusSection->thetaBufferHi ;
+	}
+	else {
+		tBuffStart = a->torusSection->thetaBufferHi ;
+		tBuffEnd = a->torusSection->thetaBufferLo ;
+	}
+
+	
+	if (! startInBuffer && ! endInBuffer ) {
+		nDiv = 3 ;
+		
+		startThetas[0] = a->thetaStart ;
+		endThetas[0] = tBuffStart ;
+		startTouches[0] = NO ;
+		endTouches[0] = YES ;
+		
+		startThetas[1] = tBuffStart ;
+		endThetas[1] = tBuffEnd ;
+		startTouches[1] = YES ;
+		endTouches[1] = YES ;
+		
+		startThetas[2] = tBuffEnd ;
+		endThetas[2] = a->thetaEnd ;
+		startTouches[2] = YES ;
+		endTouches[2] = NO ;
+		
+		
+		
+	}
+	else if( ! startInBuffer && endInBuffer ) {
+		nDiv = 2 ;
+		
+		startThetas[0] = a->thetaStart ;
+		endThetas[0] = tBuffStart ;
+		startTouches[0] = NO ;
+		endTouches[0] = YES ;
+		
+		startThetas[1] = tBuffStart ;
+		endThetas[1] = a->thetaEnd  ;
+		startTouches[1] = YES ;
+		endTouches[1] = YES ;
+	}
+	else if( startInBuffer && ! endInBuffer ) {
+		nDiv = 2 ;
+		
+		startThetas[0] = a->thetaStart ;
+		endThetas[0] = tBuffEnd ;
+		startTouches[0] = YES ;
+		endTouches[0] = YES ;
+		
+		startThetas[1] = tBuffEnd ;
+		endThetas[1] = a->thetaEnd  ;
+		startTouches[1] = YES ;
+		endTouches[1] = NO ;
+	}
+	else if( startInBuffer && endInBuffer ) {
+		// Just mark ends of arc and return
+		
+		a->startTouchLimit = YES ;
+		a->endTouchLimit = YES ;
+		return nil ;
+	}
+		
+		
+		
+	switch (a->arcType) {
+		case 1:
+		case 3:
+			for( k = 0 ; k < nDiv ; ++k ) {
+				startPhis[k] = a->phiStart ;
+				endPhis[k] = a->phiStart ;
+			}
+			
+			break;
+			
+		case 5:
+			
+			for( k = 0 ; k < nDiv ; ++k ) {
+				startPhis[k] = a->phiStart + (a->phiEnd - a->phiStart)*(startThetas[k] - a->thetaStart)/(a->thetaEnd - a->thetaStart) ;
+				endPhis[k] = a->phiStart + (a->phiEnd - a->phiStart)*(endThetas[k] - a->thetaStart)/(a->thetaEnd - a->thetaStart) ;
+			}
+			break ;
+			
+		default:
+			// Should NOT reach this point
+			printf("UNEXPECTED ARC TYPE IN subdivideWithBufferTheArc - Exit!\n");
+			exit(1) ;
+	}
+	
+	
+	MMVector3 *endVector, *startU, *endU ;
+	
+	SMVertex *startVertex, *endVertex ;
+	
+	newArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
+	
+	
+	if( [ a arcType ] != 5  )
+		{
+	
+		for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+			{
+				double startAngle = sign*(startThetas[iDiv] - a->thetaStart ) ;
+				double endAngle = sign*(endThetas[iDiv] - a->thetaStart ) ;
+			
+				double dx, dy, dz ;
+				
+				dx = cos(endAngle)*[ [ a startU ] X ] + sin(endAngle)*[ [ a uPerp ] X ] ;
+				dy = cos(endAngle)*[ [ a startU ] Y ] + sin(endAngle)*[ [ a uPerp ] Y ] ;
+				dz = cos(endAngle)*[ [ a startU ] Z ] + sin(endAngle)*[ [ a uPerp ] Z ] ;
+			
+				if( iDiv < nDiv - 1 )
+					{
+						endVector = [ [ MMVector3 alloc ] initX:dx Y:dy Z:dz ] ;
+						
+						[ endVector normalize ] ;
+					}
+			
+				if( iDiv == 0 )
+					{
+						startU = [ a startU ] ;
+						endU = endVector ;
+						
+						startVertex = [ a startVertex ] ;
+						endVertex = nil ;
+						
+						startTouch = startTouches[iDiv] ;
+						endTouch = endTouches[iDiv]  ;
+					}
+				else if( iDiv < nDiv - 1 )
+					{
+						startU = [ [ newArcs lastObject ] endU ] ;
+						endU = endVector ;
+						
+						startVertex = nil ;
+						endVertex = nil ;
+						
+						startTouch = startTouches[iDiv] ;
+						endTouch = endTouches[iDiv] ;
+					}
+				else	
+					{
+						startU = [ [ newArcs lastObject ] endU ] ;
+						endU = [ a endU ] ;
+						
+						startVertex = nil ;
+						endVertex = [ a endVertex ] ;
+						
+						startTouch = startTouches[iDiv] ;
+						endTouch = endTouches[iDiv] ;
+					}
+			
+				SMArc *copyArc ;
+				
+				copyArc = [ a copyArc ] ;
+				
+				[ copyArc setStartU:startU ] ;
+				[ copyArc setEndU:endU ] ;
+				
+				[ copyArc setStartVertex:startVertex ] ;
+				[ copyArc setEndVertex:endVertex ] ;
+				
+				copyArc->startTouchLimit = startTouch ;
+				copyArc->endTouchLimit = endTouch ;
+				
+				[ copyArc restoreVectorsAndAngle ] ;
+			
+				if( [ a torusSection ] )
+					{
+						phi1 = startPhis[iDiv]  ;
+						theta1 = startThetas[iDiv] ;
+						
+						phi2 = endPhis[iDiv]  ;
+						theta2 = endThetas[iDiv] ;
+						
+						[ copyArc setPhiStart:phi1 ] ;
+						[ copyArc setThetaStart:theta1 ] ;
+						
+						[ copyArc setPhiEnd:phi2 ] ;
+						[ copyArc setThetaEnd:theta2 ] ;
+					
+					}
+			
+			
+				[ newArcs addObject:copyArc ] ;
+			
+				if( iDiv < nDiv - 1 )
+					{
+						[ endVector release ] ;
+					}
+			}
+		
+		
+		}
+	else
+		{
+			
+			for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+				{
+					SMArc *newSaddleArc ;
+					
+					phi1 = startPhis[iDiv] ;
+					theta1 = startThetas[iDiv] ;
+					
+					phi2 = endPhis[iDiv] ;
+					theta2 = endThetas[iDiv] ;
+					
+					newSaddleArc = [ [ SMArc alloc ] initWithTorusSection:[ a torusSection ]
+																 molecule:self phiStart:phi1 thetaStart:theta1 phiEnd:phi2 thetaEnd:theta2 ] ;
+					
+					[ newArcs addObject:newSaddleArc ] ;
+					
+					
+				}
+		
+		}
+		
+	
+		
+	
+	// Adjust cycles. I will do this the obvious way, by removing and inserting arcs
+	
+	int iCycle ;
+	
+	for( iCycle = 0 ; iCycle < [ [ a parentCycles ] count ] ; ++iCycle )
+		{
+			SMCycle *theParent ;
+			
+			theParent = [ [ a parentCycles ] objectAtIndex:iCycle ] ;
+			
+			int aIndex = [ [ theParent arcs ] indexOfObject:a ] ;
+			
+			BOOL forward ; 
+			
+			forward = [ [ [ theParent forward ] objectAtIndex:aIndex ] boolValue ] ;
+			
+			if( forward == YES )
+				{
+					[ [ theParent arcs ] removeObjectAtIndex:aIndex ] ;
+					[ [ theParent forward ] removeObjectAtIndex:aIndex ] ;
+				
+				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+					{
+						[ [ theParent arcs ] insertObject:[ newArcs objectAtIndex:iDiv ] atIndex:(aIndex + iDiv) ] ;
+						[ [ theParent forward ] insertObject:[ NSNumber numberWithBool:YES ] atIndex:(aIndex + iDiv) ] ;
+					}
+				}
+			else
+				{
+				
+					[ [ theParent arcs ] removeObjectAtIndex:aIndex ] ;
+					[ [ theParent forward ] removeObjectAtIndex:aIndex ] ;
+				
+				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
+					{
+						[ [ theParent arcs ] insertObject:[ newArcs objectAtIndex:(nDiv - iDiv - 1) ] atIndex:(aIndex + iDiv) ] ;
+						[ [ theParent forward ] insertObject:[ NSNumber numberWithBool:NO ] atIndex:(aIndex + iDiv) ] ;
+					}
+				
+			}
+		
+		}
+	
+	// Check if we have torus to update
+	
+	SMTorus *theTorus ;
+	
+	if( ( theTorus = [ a torusSection ] ) != nil  )
+		{				
+			[ theTorus registerArcs:newArcs parentArc:a ] ;
+		}
+	
+	return newArcs ;
+}
+
 - (NSArray *)  subdivideCycle:(SMCycle *)cyc firstIndex:(int)start
 					secondIndex:(int)second usingArc:(SMArc *)arc
 	{

@@ -35,11 +35,11 @@
 		
 		length = angle = 0.  ;
 		
-		startTouchLimitPlane = NO ;
-		endTouchLimitPlane = NO ;
+		startTouchLimit = NO ;
+		endTouchLimit = NO ;
 	
-		thetaLPStart = -1. ;
-		thetaLPEnd = -1. ;
+		angleLPStart = -1. ;
+		angleLPEnd = -1. ;
 		
 		hostProbe = nil ;
 		
@@ -116,11 +116,11 @@
 		
 		arcCopy->skip = skip ;
 		
-		arcCopy->startTouchLimitPlane = startTouchLimitPlane ;
-		arcCopy->endTouchLimitPlane = endTouchLimitPlane ;
+		arcCopy->startTouchLimit = startTouchLimit ;
+		arcCopy->endTouchLimit = endTouchLimit ;
 	
-		arcCopy->thetaLPStart = thetaLPStart ;
-		arcCopy->thetaLPEnd = thetaLPEnd ;
+		arcCopy->angleLPStart = angleLPStart ;
+		arcCopy->angleLPEnd = angleLPEnd ;
 				
 		arcCopy->hostProbe = hostProbe ;
 		[ hostProbe retain ] ;
@@ -337,10 +337,10 @@
 		
 		length = angle = 0.  ;
 		
-		startTouchLimitPlane = NO ;
-		endTouchLimitPlane = NO ;
-		thetaLPStart = -1. ;
-		thetaLPEnd = -1. ;
+		startTouchLimit = NO ;
+		endTouchLimit = NO ;
+		angleLPStart = -1. ;
+		angleLPEnd = -1. ;
 	
 		hostProbe = nil ;
 		

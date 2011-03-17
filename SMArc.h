@@ -66,13 +66,11 @@
 	BOOL skip ;
 	
 	
-	BOOL startTouchLimitPlane, endTouchLimitPlane ;
+	BOOL startTouchLimit, endTouchLimit ;
 	
-	// Intersects with limit plane - thetaLPStart is closest to startU, thetaLPEnd closest to endU
+	// Intersects with limit plane - anglePStart is closest to startU, angleLPEnd closest to endU
 	
-	double thetaLPStart, thetaLPEnd ;
-	
-	//int startVertexIndex, endVertexIndex ;
+	double angleLPStart, angleLPEnd ;
 	
 	// parentArc non-nil marks an arc that has been deleted. 
 	

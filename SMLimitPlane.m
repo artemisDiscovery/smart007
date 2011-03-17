@@ -265,6 +265,8 @@
 				//
 				// NOTE that if Rp cos(phi) <= h there is no intersection between the arc plane and the limit plane
 			
+				// Since these are always geodesics, we need only compute two angles from start vector
+			
 				MMVector3 *A, *E, *F, *p1, *p2 ;
 			
 				for( SMArc *nextArc in arcs ) {
@@ -325,18 +327,18 @@
 					double t2 = acos([ nextArc->startU dotWith:p2 ]) ;
 					
 					if (t1 < t2 ) {
-						nextArc->thetaLPStart = thetaStart + sgn * t1 ;
-						nextArc->thetaLPEnd = thetaStart + sgn * t2 ;
+						nextArc->angleLPStart = t1 ;
+						nextArc->angleLPEnd = thetaStart + sgn * t2 ;
 					}
 					else {
-						nextArc->thetaLPStart = thetaStart + sgn * t2 ;
-						nextArc->thetaLPEnd = thetaStart + sgn * t1 ;
+						nextArc->angleLPStart = thetaStart + sgn * t2 ;
+						nextArc->angleLPEnd = thetaStart + sgn * t1 ;
 					}
 					
 					// Sanity check
 					
-					if (nextArc->thetaLPStart < 0. || nextArc->thetaLPEnd < 0. ||
-						nextArc->thetaLPStart > nextArc->torusSection->thetaMax || nextArc->thetaLPEnd > nextArc->torusSection->thetaMax) {
+					if (nextArc->angleLPStart < 0. || nextArc->angleLPEnd < 0. ||
+						nextArc->angleLPStart > nextArc->torusSection->thetaMax || nextArc->angleLPEnd > nextArc->torusSection->thetaMax) {
 						printf("LIMIT PLANE CONSTRUCTION FAILED - Could not assign arc-limit plane interctions - Exit!\n" );
 						exit(1) ;
 					}
