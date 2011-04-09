@@ -15,13 +15,11 @@
 
 @implementation SMArc
 
-- (id) initWithHostCenter:(MMVector3 *)hc radius:(double)hr torusSection:(SMTorus *)ts arcType:(int)at
+- (id) initWithHostCenter:(MMVector3 *)hc radius:(double)hr torusSection:(SMTorus *)ts arcType:(arcClass)at
 	{
 		self = [ super init ] ;
 		
-		[ hc retain ] ;
-		
-		hostCenter = hc ;
+		hostCenter = [ [ MMVector3 alloc ] initUsingVector:hc ] ;
 		
 		hostRadius = hr ;
 		
@@ -35,14 +33,11 @@
 		
 		length = angle = 0.  ;
 		
-		startTouchLimit = NO ;
-		endTouchLimit = NO ;
+		selfIntersectionType = UNKNOWN ; 
 	
-		angleLPStart = -1. ;
-		angleLPEnd = -1. ;
-		
 		hostProbe = nil ;
 		
+		// Weak reference, torus section is never dealloced
 		torusSection = ts ;
 		
 		arcType = at ;
@@ -115,13 +110,9 @@
 		
 		
 		arcCopy->skip = skip ;
-		
-		arcCopy->startTouchLimit = startTouchLimit ;
-		arcCopy->endTouchLimit = endTouchLimit ;
 	
-		arcCopy->angleLPStart = angleLPStart ;
-		arcCopy->angleLPEnd = angleLPEnd ;
-				
+		arcCopy->selfIntersectionType = selfIntersectionType ;
+							
 		arcCopy->hostProbe = hostProbe ;
 		[ hostProbe retain ] ;
 		
@@ -337,16 +328,13 @@
 		
 		length = angle = 0.  ;
 		
-		startTouchLimit = NO ;
-		endTouchLimit = NO ;
-		angleLPStart = -1. ;
-		angleLPEnd = -1. ;
+		selfIntersectionType = UNKNOWN  ;
 	
 		hostProbe = nil ;
 		
 		torusSection = ts ;
 		
-		arcType = 5 ;
+		arcType = INTERIORSADDLE ;
 		
 		parentArc = nil ;
 		parentCycles = nil ;
@@ -454,44 +442,264 @@
 	{
 	
 	
-		[ hostCenter release ] ;
-
-		//[ hostProbe release ] ;
+		if( hostCenter ) [ hostCenter release ] ;
 		
-		//[ torusSection release ] ;
+		if( arcCenter ) [ arcCenter  release ] ;
+		if( arcAxis ) [ arcAxis release ] ;
 		
-		[ arcCenter  release ] ;
-		[ arcAxis release ] ;
+		if( startU ) [ startU release ] ;
+		if( endU ) [ endU release ] ;
+		if( uPerp ) [ uPerp release ] ;
 		
-		[ startU release ] ;
-		[ endU release ] ;
-		[ uPerp release ] ;
+		if( startPosition ) [ startPosition release ] ; 
+		if( endPosition ) [ endPosition release ]  ;
 		
-		
-		
-		//[ parentCycles release ] ;
-		
-		
-		[ startPosition release ] ; 
-		[ endPosition release ]  ;
-		
-		[ startTangent release ] ; 
-		[ endTangent release ]  ;
+		if( startTangent ) [ startTangent release ] ; 
+		if( endTangent ) [ endTangent release ]  ;
 		
 		[ super dealloc ] ;
 		
 		return ;
 	}
 	
-		
-
-- (void) useLimitPlaneWithPoint:(MMVector3 *)p andNormal:(MMVector3 *)n
+- (NSArray *) interiorArcsForGeodesicWithCenter:(MMVector3 *)cntr limitAxis:(MMVector3 *)lmaxis minimumDisplacement:(double) minDisp arcSize:(double) size
 	{
-		// 
-		
-		return ;
-	}
+		// This method will work for geodesic arcs, whether on atom or probe surface. It can handle, if needed, a limit plane or torus
+		// buffer zone. 
 	
+		double dx, dy, dz ;
+	
+		if ( selfIntersectionType == BOTHTOUCH ) {
+			// Treat this as a straight line
+			
+			// This class of "geodesic" arc is treated as a simple straight line between 'startPosition' and 'endPosition' vectors
+			
+			MMVector3 *line = [ [ MMVector3 alloc ] initBySubtracting:endPosition minus:startPosition ] ;
+			
+			double len = [ line length ] ;
+			
+			[ line normalize ] ;
+			
+			int nDiv = len / size ;
+			int iDiv ;
+			
+			if (nDiv <= 1 ) {
+				return nil ;
+			}
+			
+			NSMutableArray *returnArray = [ NSMutableArray arrayWithCapacity:5 ] ;
+			
+			double div = [ a length ] / nDiv ;
+			
+			for( iDiv = 0 ; iDiv < nDiv ; ++iDiv  ) {
+				MMVector3 *s, *e ;
+				
+				if (iDiv == 0 ) {
+					s = startU ;
+					
+					e = [ [ MMVector3 alloc ] initUsingVector:line ] ;
+					[ e scaleBy:div ] ;
+					[ e addVector:startPosition ] ;
+					
+					SMArc *newArc = [ self copyArc ] ;
+					newArc->
+					
+					
+					
+					
+				}
+			}
+			
+			
+			
+			
+			
+		}
+	
+		
+	}
+- (NSArray *) subdivisionDataWithDivisionSize:(double) div 
+	{
+		// This critical function finds the division points to be used when subdividing an arc. It works with either geodesic arcs in reentrant 
+		// regions, or arcs in saddle sections. 
+	
+		// For simple circular arcs/geodesics, the return is an array of normalized vectors directed at the division points. 
+	
+		// For reentrant geodesics, the return array includes, for each division point, an array containing (1) a vector directed from arc center to 
+		// division point, 2) a flag indicating whether the point touches either a saddle buffer zone or limit plane.
+	
+		// For interior saddle arcs, the retuen array contains, for each division point, an array of three NSNumbers - theta, phi, and 
+		// a flag indicating touching the buffer zone of the saddle.
+	
+		NSMutableArray *returnArray = [ NSMutableArray arrayWithCapacity:10 ] ;
+	
+		switch ( a->arcType ) {
+			case CONTACTI:
+			case CONTACTJ:
+				
+				int nDiv ;
+				
+				if ( div <= 0. ) {
+					 nDiv = 2 ;
+				}
+				else {
+					nDiv = a->length / div ;
+				}
+				
+				if (nDiv <= 1 ) {
+					return nil ;
+				}
+
+				double angleIncrement ;
+				
+				angleIncrement = ((double)[ a angle ]) / nDiv ;
+				
+				double dx, dy, dz ;
+				
+				int iDiv ;
+				
+				for( iDiv = 0 ; iDiv < nDiv ; ++iDiv ) {
+					
+					double ang = iDiv * angleIncrement ;
+					
+					dx = cos(ang)*[ [ a startU ] X ] + sin(ang)*[ [ a uPerp ] X ] ;
+					dy = cos(ang)*[ [ a startU ] Y ] + sin(ang)*[ [ a uPerp ] Y ] ;
+					dz = cos(ang)*[ [ a startU ] Z ] + sin(ang)*[ [ a uPerp ] Z ] ;
+					
+					MMVector3 *divideVector ;
+					
+					divideVector = [ [ MMVector3 alloc ] initX:dx Y:dy Z:dz ] ;
+					
+					[ divideVector normalize ] ;
+					
+					[ returnArray addObject:divideVector ] ;
+					[ divideVector release ] ;
+				}
+			break;
+
+				case REENTRANTL:
+				case REENTRANTR:
+					
+					// Need to check for intersection with buffer zone - collect subarcs to process individually
+				
+					// Consider that we may have theta start > theta end, in which case we reverse order of thetaBufferLo and thetaBufferHi
+					// To make things a little easier, work in "delta thetas" from one end of the other
+					double theta1, theta2, thetaBuff1, thetaBuff2, sign ;
+					BOOL span ; // Does arc enclose the self-intersection zone?
+				
+					if (a->torusSection->thetaStart < a->torusSection->thetaEnd ) {
+						theta1 = 0. ;
+						theta2 = a->torusSection->thetaEnd - a->torusSection->thetaStart ;
+						thetaBuff1 = a->torusSection->thetaBufferLo - a->torusSection->thetaStart ;
+						thetaBuff2 = a->torusSection->thetaBufferHi - a->torusSection->thetaStart ;
+						sign = 1. ;
+					}
+					else {
+						theta1 = 0. ;
+						theta2 = a->torusSection->thetaStart - a->torusSection->thetaEnd ;
+						thetaBuff1 = a->torusSection->thetaBufferHi - a->torusSection->thetaEnd ;
+						thetaBuff2 = a->torusSection->thetaBufferLo - a->torusSection->thetaEnd ;
+						sign = -1. ;
+					}
+
+					BOOL inside1, inside2 ;
+				
+					if (thetaBuff1 <= theta1 && theta1 <= thetaBuff2 ) {
+						inside1 = YES ;
+					}
+					else {
+						inside1 = NO ;
+					}
+				
+					if (thetaBuff1 <= theta2 && theta2 <= thetaBuff2 ) {
+						inside2 = YES ;
+					}
+					else {
+						inside2 = NO ;
+					}
+				
+					if (theta1 <= thetaBuff1 && theta2 >= thetaBuff2 ) {
+						span = YES ;
+					}
+					else {
+						span = NO ;
+					}
+
+
+					NSMutableArray *subArcsByTheta = [ NSMutableArray arrayWithCapacity:3 ] ;
+				
+					if (inside1 == YES && inside2 == YES ) {
+						[ subArcsByTheta 
+						 addObject:[ NSArray arrayWithObjects:[ NSNumber numberWithDouble:theta1 ], 
+																[ NSNumber numberWithDouble:theta2 ], [ NSNumber numberWithInt:(int)BOTHTOUCH ], nil ] ] ;
+					}
+					else if (inside1 == YES && inside2 == NO ) {
+						[ subArcsByTheta 
+						 addObject:[ NSArray arrayWithObjects:[ NSNumber numberWithDouble:theta1 ], 
+									[ NSNumber numberWithDouble:thetaBuff2 ], [ NSNumber numberWithInt:(int)BOTHTOUCH ], nil ] ] ;
+						[ subArcsByTheta 
+						 addObject:[ NSArray arrayWithObjects:[ NSNumber numberWithDouble:thetaBuff2 ], 
+									[ NSNumber numberWithDouble:theta2 ], [ NSNumber numberWithInt:(int)STARTTOUCH ], nil ] ] ;
+					}
+					else if (inside1 == NO && inside2 == YES ) {
+						[ subArcsByTheta 
+						 addObject:[ NSArray arrayWithObjects:[ NSNumber numberWithDouble:theta1 ], 
+									[ NSNumber numberWithDouble:thetaBuff1 ], [ NSNumber numberWithInt:(int)ENDTOUCH ], nil ] ] ;
+						[ subArcsByTheta 
+						 addObject:[ NSArray arrayWithObjects:[ NSNumber numberWithDouble:thetaBuff1 ], 
+									[ NSNumber numberWithDouble:theta2 ], [ NSNumber numberWithInt:(int)BOTHTOUCH ], nil ] ] ;
+					}
+					else {
+						// Both flags are NO
+						
+						if (span == YES ) {
+							[ subArcsByTheta 
+							 addObject:[ NSArray arrayWithObjects:[ NSNumber numberWithDouble:theta1 ], 
+										[ NSNumber numberWithDouble:thetaBuff1 ], [ NSNumber numberWithInt:(int)ENDTOUCH ], nil ] ] ;
+							[ subArcsByTheta 
+							 addObject:[ NSArray arrayWithObjects:[ NSNumber numberWithDouble:thetaBuff1 ], 
+										[ NSNumber numberWithDouble:thetaBuff2 ], [ NSNumber numberWithInt:(int)BOTHTOUCH ], nil ] ] ;
+							[ subArcsByTheta 
+							 addObject:[ NSArray arrayWithObjects:[ NSNumber numberWithDouble:thetaBuff2 ], 
+										[ NSNumber numberWithDouble:theta2 ], [ NSNumber numberWithInt:(int)STARTTOUCH ], nil ] ] ;
+						}
+					}
+
+				// Now that subarcs are defined, process individually to set interior theta values
+				
+				// Need theta reference - this actually only works for a reentrant boundary arc (probe fixed)
+				
+				MMVector3 *thetaRef, *thetaPerp ;
+				
+				double dx = [ [ a hostProbe ] X ] - xAtom[ a->torusSection->atomI ] ;
+				double dy = [ [ a hostProbe ] Y ] - yAtom[ a->torusSection->atomI ] ;
+				double dz = [ [ a hostProbe ] Z ] - zAtom[ a->torusSection->atomI ] ;
+				
+				thetaRef = [ [ MMVector3 alloc ] initX:dx Y:dy Z:dz ] ;
+				[ thetaRef normalize ] ;
+				
+				thetaPerp = [ [ MMVector3 alloc ] initAlong:a->torusSection->axis perpTo:thetaRef ] ;
+				
+				
+				
+				
+				
+					
+				
+					
+				
+			break;
+
+			
+				break;
+			default:
+				break;
+		}
+	
+		
+	}
+
+
 - (double) angle
 	{
 		return angle ;
@@ -542,7 +750,7 @@
 	
 	
 	
-- (int) arcType 
+- (arcClass) arcType 
 	{
 		return arcType ;
 	}
@@ -862,7 +1070,7 @@
 		
 		// See if perp needs to be reversed
 		
-		if( arcType == 1 )
+		if( arcType == REENTRANTR )
 			{
 				// Check if vector in direction of host probe
 				
@@ -871,7 +1079,7 @@
 						[ perp reverse ] ;
 					}
 			}
-		else if( arcType == 3 )
+		else if( arcType == REENTRANTL )
 			{
 				// Check if vector in direction of host probe
 				
@@ -995,7 +1203,7 @@ SKIP_START:
 		
 		[ perp normalize ] ;
 		
-		if( arcType == 1 )
+		if( arcType == REENTRANTR )
 			{
 				// Check if vector in direction of host probe
 				
@@ -1004,7 +1212,7 @@ SKIP_START:
 						[ perp reverse ] ;
 					}
 			}
-		else if( arcType == 3 )
+		else if( arcType == REENTRANTL )
 			{
 				// Check if vector in direction of host probe
 				
@@ -1182,9 +1390,9 @@ SKIP_END:
 		
 		switch( arcType )
 			{
-				case 0: // Contact I
-				case 2: // Contact J
-				case 6: // Interior geodesic
+				case CONTACTI: // Contact I
+				case CONTACTJ: // Contact J
+				case INTERIORGEODESIC: // Interior geodesic
 		
 					deltaAngle = angle * f ;
 									
@@ -1214,9 +1422,9 @@ SKIP_END:
 					
 					break ;
 					
-				case 1: // Reentrant R
-				case 3: // Reentrant L
-				case 5: // Interior saddle
+				case REENTRANTR: // Reentrant R
+				case REENTRANTL: // Reentrant L
+				case INTERIORSADDLE: // Interior saddle
 				
 			
 					phi1 = phiStart + (phiEnd - phiStart)*f ;

@@ -57,11 +57,16 @@
 - (id) initAlong: (MMVector3 *) a perpTo: (MMVector3 *) p ;
 - (id) initPerpTo: (MMVector3 *) p byCrossWith: (MMVector3 *) c ;
 
+- (id) initBySubtracting:(MMVector3 *)A minus:(MMVector3 *)B ;
+- (id) initByAdding:(MMVector3 *)A plus::(MMVector3 *)B ;
+
 - (id) initUsingVector:(MMVector3 *) v ;
 
 - (id) initByCrossing:(MMVector3 *)u and:(MMVector3 *)v ;
 
 - (void) scaleBy: (double)s ;
+
+- (void) addVector:(MMVector3 *)v ;
 
 - (void) reverse ;
 

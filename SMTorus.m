@@ -356,7 +356,7 @@
 		
 		MMVector3 *arcAxis = [ [ [ MMVector3 alloc ] initX:[ axis X] Y:[ axis Y] Z:[ axis Z] ] autorelease ] ;
 		
-		contactArcI = [ [ SMArc alloc ] initWithHostCenter:hc radius:rI torusSection:self arcType:0 ] ;
+		contactArcI = [ [ SMArc alloc ] initWithHostCenter:hc radius:rI torusSection:self arcType:CONTACTI ] ;
 		
 		[ contactArcI initializeWithArcCenter:arcCenter arcRadius:arcR axis:arcAxis start:sU end:eU hostProbe:nil  ] ;
 		
@@ -431,7 +431,7 @@
 		
 		arcAxis = [ [ [ MMVector3 alloc ] initX:(-[ axis X]) Y:(-[ axis Y]) Z:(-[ axis Z]) ] autorelease ] ;
 		
-		contactArcJ = [ [ SMArc alloc ] initWithHostCenter:hc radius:rJ torusSection:self arcType:2 ] ;
+		contactArcJ = [ [ SMArc alloc ] initWithHostCenter:hc radius:rJ torusSection:self arcType:CONTACTJ  ] ;
 		
 		[ contactArcJ initializeWithArcCenter:arcCenter arcRadius:arcR  axis:arcAxis start:sU end:eU hostProbe:nil  ] ;
 		
@@ -472,7 +472,7 @@
 		
 		hc = [ [ [ MMVector3 alloc ] initX:[ probeR X ] Y:[ probeR Y ] Z:[ probeR Z ] ] autorelease ] ;
 		
-		reentrantArcR = [ [ SMArc alloc ] initWithHostCenter:hc radius:m->probeRadius torusSection:self arcType:1  ] ;
+		reentrantArcR = [ [ SMArc alloc ] initWithHostCenter:hc radius:m->probeRadius torusSection:self arcType:REENTRANTR   ] ;
 		
 		[ reentrantArcR initializeWithArcCenter:hc arcRadius:arcR axis:arcAxis start:sU end:eU hostProbe:probeR  ] ;
 
@@ -509,7 +509,7 @@
 		
 		hc = [ [ [ MMVector3 alloc ] initX:[ probeL X ] Y:[ probeL Y ] Z:[ probeL Z ] ] autorelease ] ;
 		
-		reentrantArcL = [ [ SMArc alloc ] initWithHostCenter:hc radius:m->probeRadius torusSection:self arcType:3 ] ;
+		reentrantArcL = [ [ SMArc alloc ] initWithHostCenter:hc radius:m->probeRadius torusSection:self arcType:REENTRANTL  ] ;
 		
 		[ reentrantArcL initializeWithArcCenter:hc arcRadius:arcR axis:arcAxis start:sU end:eU hostProbe:probeL  ] ;
 		

@@ -192,6 +192,24 @@
 		return self ;
 	}
 
+- (id) initBySubtracting:(MMVector3 *)A minus:(MMVector3 *)B 
+{
+	MMVector3 *returnVec = [ [ MMVector3 alloc ] initX:(A->X - B->X) Y:(A->Y - B->Y) Z:(A->Z - B->Z) ] ;
+	
+	return returnVec ;
+}
+
+- (id) initByAdding:(MMVector3 *)A plus:(MMVector3 *)B 
+{
+	MMVector3 *returnVec = [ [ MMVector3 alloc ] initX:(A->X + B->X) Y:(A->Y + B->Y) Z:(A->Z + B->Z) ] ;
+	
+	return returnVec ;
+}
+
+
+- (id) initBYAdding:(MMVector3 *)A plus::(MMVector3 *)B ;
+
+
 - (id)initPerpTo: (MMVector3 *)p   byCrossWith: (MMVector3 *)c  
 {
     double xp, yp, zp, xc, yc, zc ;
@@ -342,6 +360,15 @@
 		return ;
 	}
     
+- (void) addVector:(MMVector3 *)v 
+	{
+		X += [ v X ] ;
+		Y += [ v Y ] ;
+		Z += [ v Z ] ;
+	
+		return ;
+	}
+
 - (void) reverse
 	{
 		X = -X ;

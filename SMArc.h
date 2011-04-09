@@ -24,6 +24,13 @@
 
 //#import "SMMol.h"
 
+typedef enum {
+	 CONTACTI, REENTRANTR, CONTACTJ, REENTRANTL, INTERIORSADDLE, INTERIORGEODESIC, INTERIORCIRCULARARC  
+} arcClass ;
+
+typedef enum {
+	 NOTOUCH, BOTHTOUCH, STARTTOUCH, ENDTOUCH, UNKNOWN 
+} selfIntersectionClass ; // BOTHTOUCH means both ends are in the self-intersection zone, others self-explanatory
 
 @interface SMArc : NSObject 
 {
@@ -48,8 +55,7 @@
 	SMProbe *hostProbe ;
 	
 	SMTorus *torusSection ;
-	int arcType ;		// 0 = contactI, 1 = reentrantR, 2 = contactJ, 3 = reentrantL, 5 = interior saddle, 6 = interior geodesic, 7 = interior circular arc
-	
+	arcClass arcType ;			
 	
 	MMVector3 *arcCenter, *arcAxis ;
 	
@@ -66,12 +72,8 @@
 	BOOL skip ;
 	
 	
-	BOOL startTouchLimit, endTouchLimit ;
-	
-	// Intersects with limit plane - anglePStart is closest to startU, angleLPEnd closest to endU
-	
-	double angleLPStart, angleLPEnd ;
-	
+	selfIntersectionClass selfIntersectionType ;
+		
 	// parentArc non-nil marks an arc that has been deleted. 
 	
 	SMArc *parentArc ;
@@ -105,15 +107,13 @@
 	
 }
 
-- (id) initWithHostCenter:(MMVector3 *)hc radius:(double)hr torusSection:(SMTorus *)ts arcType:(int)at ;
+- (id) initWithHostCenter:(MMVector3 *)hc radius:(double)hr torusSection:(SMTorus *)ts arcType:(arcClass)at ;
 
 - (void) initializeWithArcCenter:(MMVector3 *)ac arcRadius:(double)ar axis:(MMVector3 *)ax start:(MMVector3 *)s end:(MMVector3 *)e hostProbe:(SMProbe *)hp ;
 
 - (id) initWithTorusSection:(SMTorus *)ts molecule:(SMMol *)mol phiStart:(double)phiS thetaStart:(double)thetaS phiEnd:(double)phiE thetaEnd:(double)thetaE ;
 
 - (id) copyArc ;
-
-- (void) useLimitPlaneWithPoint:(MMVector3 *)p andNormal:(MMVector3 *)n ;
 
 - (double) length ;
 - (double) angle ;
@@ -133,7 +133,7 @@
 
 - (SMTorus *) torusSection ;
 
-- (int) arcType ;
+- (arcClass) arcType ;
 
 - (BOOL) intersectWith:(SMArc *)t ;
 - (BOOL) intersectWith2:(SMArc *)arc2 ;
@@ -205,5 +205,7 @@
 - (MMVector3 *) computePositionForTheta:(double)t andPhi:(double)p usingMolecule:(SMMol *)mol allowSelfIntersection:(BOOL)SIFlag normal:(MMVector3 *)norm ;
  
 - (void) theArcPoint:(MMVector3 *)p atFraction:(double) f usingMolecule:(SMMol *)m ;
+
+- (NSArray *) subdivisionDataWithDivisionSize:(double) div ;
 
 @end

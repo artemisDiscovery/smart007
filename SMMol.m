@@ -3058,7 +3058,7 @@ PROCESS_FREE_TORI:
 												
 												// This test needs to be more sophisticated - I will include additional test in buildSaddleUsingStart: (etc)
 												
-												if( [ jArc arcType ] != 5 && [ jArc arcType ] == [ kArc arcType ] ) continue ;
+												if( [ jArc arcType ] != INTERIORSADDLE && [ jArc arcType ] == [ kArc arcType ] ) continue ;
 												
 												
 												buildArc = [ self buildSaddleUsingStart:[ cycleArcs objectAtIndex:j ] 
@@ -5586,6 +5586,69 @@ PROCESS_FREE_TORI:
 		cycleEnumerator = [ reentrantCycles objectEnumerator ] ;
 		
 		NSMutableArray *tempArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
+	
+		// If we disallow self-intersecting surface, make an initial pass and try to subdivide using buffer or limit plane
+	
+		if (allowSelfIntersection == NO ) {
+			
+			while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
+				{
+				// Need a temporary copy of the arcs array of the next cycle
+				
+				[ tempArcs removeAllObjects ] ;
+				[ tempArcs addObjectsFromArray:[ nextCycle arcs ] ] ;
+				
+				NSEnumerator *arcEnumerator ;
+				SMArc *nextArc ;
+				
+				arcEnumerator = [ tempArcs objectEnumerator ] ;
+				
+				while( ( nextArc = [ arcEnumerator nextObject ] ) )
+					{
+						// Check for no parent cycle > nextCycle 
+						
+						BOOL skip ;
+						NSEnumerator *parentCycleEnumerator ;
+						SMCycle *nextParentCycle ;
+						
+						skip = NO ;
+						parentCycleEnumerator = [ [ nextArc parentCycles ] objectEnumerator ] ;
+						
+						while( ( nextParentCycle = [ parentCycleEnumerator nextObject ] ) )
+							{
+								if( nextParentCycle > nextCycle )
+									{
+										skip = YES ;
+										break ;
+									}
+								}
+						
+						if( skip == YES ) continue ;
+						
+						// Make sure the arc is still there!
+						
+						if( [ [ nextCycle arcs ] indexOfObject:nextArc ] == NSNotFound ) continue ;
+						
+						if (nextArc->startTouchLimit == NO && nextArc->endTouchLimit == NO ) {
+							
+							if (nextArc->torusSection) {
+								
+								[ self subdivideWithBufferArc:nextArc ] ;
+								
+							}
+							else {
+									// Check for possible intersection with limitplane
+									
+									if (nextCycle->theLimitPlane && nextCycle->theLimitPlane->selfIntersection ==  YES ) {
+										[ self subdivideArc:nextArc usingLimitPlane:nextCycle->theLimitPlane ] 
+								}
+							}
+							
+						}
+					
+					}
+				}
+		}
 		
 		while( ( nextCycle = [ cycleEnumerator nextObject ] ) )
 			{
@@ -5624,7 +5687,9 @@ PROCESS_FREE_TORI:
 						// Make sure the arc is still there!
 						
 						if( [ [ nextCycle arcs ] indexOfObject:nextArc ] == NSNotFound ) continue ;
-						
+					
+						// Regular subdivision 
+					
 						[ self subdivideArc:nextArc usingDivision:div ] ;
 					}
 			}
@@ -6362,7 +6427,7 @@ PROCESS_FREE_TORI:
 			{
 				// All is right with the world!
 						
-				returnArc = [ [ SMArc alloc ] initWithHostCenter:center radius:[ sourceArc hostRadius ] torusSection:nil arcType:6 ] ;
+				returnArc = [ [ SMArc alloc ] initWithHostCenter:center radius:[ sourceArc hostRadius ] torusSection:nil arcType:INTERIORGEODESIC ] ;
 				
 				[ returnArc initializeWithArcCenter:center arcRadius:[ sourceArc hostRadius ] axis:tryAxis start:start end:end hostProbe:nil  ] ;
 				
@@ -6374,7 +6439,7 @@ PROCESS_FREE_TORI:
 				
 				[ tryAxis reverse ] ;
 				
-				returnArc = [ [ SMArc alloc ] initWithHostCenter:center radius:[ sourceArc hostRadius ] torusSection:nil arcType:6 ] ;
+				returnArc = [ [ SMArc alloc ] initWithHostCenter:center radius:[ sourceArc hostRadius ] torusSection:nil arcType:INTERIORGEODESIC ] ;
 				
 				[ returnArc initializeWithArcCenter:center arcRadius:[ sourceArc hostRadius ] axis:tryAxis start:start end:end hostProbe:nil  ] ;
 				
@@ -6682,7 +6747,7 @@ PROCESS_FREE_TORI:
 			
 		SMArc *returnArc ;
 		
-		returnArc = [ [ SMArc alloc ] initWithHostCenter:hc radius:hr torusSection:nil arcType:7 ] ;
+		returnArc = [ [ SMArc alloc ] initWithHostCenter:hc radius:hr torusSection:nil arcType:INTERIORCIRCULARARC ] ;
 		
 		[ returnArc initializeWithArcCenter:arcCenter arcRadius:arcRadius axis:axis start:start end:end hostProbe:nil ] ;
 		
@@ -6737,10 +6802,19 @@ PROCESS_FREE_TORI:
 	
 - (NSArray *) subdivideTheArc:(SMArc *)a
 	{
-		
+		// This attempts to divide the arc into two or more subarcs. 
+	
+		// Introduce logic to subdivide using selected division points instead of uniform division.  Required if
+		// self-interesecting surface not allowed, and if we contact saddle buffer zone or reentrant limit plane.
+	
+		// If arc touches limit plane/buffer, subdivide by limit plane/buffer ; else divide in two. Can produce a maximum
+		// of THREE child arcs if two intersection points with plane/buffer
+	
+		NSArray *divisionData = [ a subdivisionDataWithDivisionSize:(double)0. ] ; // 0. implies binary division
+	
 		SMArc *arc1, *arc2 ;
 		
-		if( [ a arcType ] != 5 )
+		if( [ a arcType ] != INTERIORSADDLE )
 			{
 		
 
@@ -6877,7 +6951,7 @@ PROCESS_FREE_TORI:
 		
 		SMTorus *theTorus ;
 		
-		if( ( theTorus = [ a torusSection ] ) != nil  && [ a arcType ] != 5 )
+		if( ( theTorus = [ a torusSection ] ) != nil  && [ a arcType ] != INTERIORSADDLE )
 			{
 				NSArray *arcs ;
 				
@@ -6943,7 +7017,7 @@ PROCESS_FREE_TORI:
 	}
 		
 	
-- (void) subdivideArc:(SMArc *)a usingLimitPlane:(SMLimitPlane *)plane
+- (void) subdivideArc:(SMArc *)a usingLimitPlane:(SMLimitPlane *)plane usingDivision:(double)div
 	{
 		
 		// This method divides an arc into multiple parts, while maintaining reference to its parent cycles
@@ -6958,8 +7032,8 @@ PROCESS_FREE_TORI:
 		
 		if( ( theTwin = [ a twin ] ) )
 			{
-				newArcs = [ self subdivideTheArc:a usingLimitPlane:plane ] ;
-				newTwinArcs = [ self subdivideTheArc:theTwin usingLimitPlane:plane ] ;
+				newArcs = [ self subdivideTheArc:a usingLimitPlane:plane usingDivision:div ] ;
+				newTwinArcs = [ self subdivideTheArc:theTwin usingLimitPlane:plane usingDivision:div] ;
 				
 				if( ! newArcs ) return ;
 				
@@ -6986,7 +7060,7 @@ PROCESS_FREE_TORI:
 			}
 		else
 			{
-				newArcs = [ self subdivideTheArc:a usingDivision:div ] ;
+				newArcs = [ self subdivideTheArc:a usingLimitPlane:plane usingDivision:div ] ;
 				if (! newArcs ) {
 					return ;
 				}
@@ -6996,7 +7070,7 @@ PROCESS_FREE_TORI:
 		return ;
 	}
 
-- (void) subdivideWithBufferArc:(SMArc *)a 
+- (void) subdivideWithBufferArc:(SMArc *)a usingDivision:(double) div
 	{
 		
 		// This method divides an arc into multiple parts, while maintaining reference to its parent cycles
@@ -7010,39 +7084,39 @@ PROCESS_FREE_TORI:
 		
 		if( ( theTwin = [ a twin ] ) )
 			{
-			newArcs = [ self subdivideWithBufferTheArc:a  ] ;
-			newTwinArcs = [ self subdivideWithBufferTheArc:theTwin ] ;
-			
-			if( ! newArcs ) return ;
-			
-			// These are expected to have opposite (geometrical) orientations
-			
-			int i, M ; 
-			
-			// Sanity check
-			
-			if( ( M = [ newArcs count ] ) != [ newTwinArcs count ] )
-				{
-				printf( "TWINNED ARCS SUBDIVIDE UNEQUALLY - Exit!\n" ) ;
-				exit(1) ;
-				}
-			
-			for( i = 0 ; i < M ; ++i )
-				{
-				[ [ newArcs objectAtIndex:i ] setTwin:[ newTwinArcs objectAtIndex:(M - 1 - i) ] ] ;
-				[ [ newTwinArcs objectAtIndex:(M - 1 - i) ] setTwin:[ newArcs objectAtIndex:i ] ] ;
-				}
-			
-			[ newArcs release ] ;
-			[ newTwinArcs release ] ;
+				newArcs = [ self subdivideWithBufferTheArc:a  usingDivision:div ] ;
+				newTwinArcs = [ self subdivideWithBufferTheArc:theTwin usingDivision:div ] ;
+				
+				if( ! newArcs ) return ;
+				
+				// These are expected to have opposite (geometrical) orientations
+				
+				int i, M ; 
+				
+				// Sanity check
+				
+				if( ( M = [ newArcs count ] ) != [ newTwinArcs count ] )
+					{
+						printf( "TWINNED ARCS SUBDIVIDE UNEQUALLY - Exit!\n" ) ;
+						exit(1) ;
+					}
+				
+				for( i = 0 ; i < M ; ++i )
+					{
+						[ [ newArcs objectAtIndex:i ] setTwin:[ newTwinArcs objectAtIndex:(M - 1 - i) ] ] ;
+						[ [ newTwinArcs objectAtIndex:(M - 1 - i) ] setTwin:[ newArcs objectAtIndex:i ] ] ;
+					}
+				
+				[ newArcs release ] ;
+				[ newTwinArcs release ] ;
 			}
 		else
 			{
-			newArcs = [ self subdivideTheArc:a usingDivision:div ] ;
-			if (! newArcs ) {
-				return ;
-			}
-			[ newArcs release ] ;
+				newArcs = [ self subdivideWithBufferTheArc:a  usingDivision:div ] ;
+					if (! newArcs ) {
+						return ;
+				}
+				[ newArcs release ] ;
 			}
 		
 		return ;
@@ -7062,7 +7136,7 @@ PROCESS_FREE_TORI:
 		SMVertex *startVertex, *endVertex ;
 		
 		double phi1, theta1, phi2, theta2, deltaTheta, deltaPhi ;
-		
+		BOOL  startTouch, endTouch ;
 		
 		nDiv = (int) floor( [ a length ] / div ) ;
 		
@@ -7072,7 +7146,7 @@ PROCESS_FREE_TORI:
 		
 		// Note - use saddle-type subdivision on reentrant arcs (reentrantR and reentrantL) to handle self-intersecting surface
 		
-		if( [ a arcType ] != 5  )
+		if( [ a arcType ] != INTERIORSADDLE  )
 			{
 		
 				deltaAngle = [ a angle ] / nDiv ;
@@ -7108,6 +7182,16 @@ PROCESS_FREE_TORI:
 								
 								startVertex = [ a startVertex ] ;
 								endVertex = nil ;
+							
+								startTouch = a->startTouchLimit ;
+								
+								if (a->startTouchLimit == YES && a->endTouchLimit == YES ) {
+									endTouch = YES ;
+								}
+								else {
+									endTouch = NO ;
+								}
+
 							}
 						else if( iDiv < nDiv - 1 )
 							{
@@ -7116,6 +7200,15 @@ PROCESS_FREE_TORI:
 								
 								startVertex = nil ;
 								endVertex = nil ;
+							
+								if (a->startTouchLimit == YES && a->endTouchLimit == YES ) {
+									startTouch = YES ;
+									endTouch = YES ;
+								}
+								else {
+									startTouch = NO ;
+									endTouch = NO ;
+								}
 							}
 						else	
 							{
@@ -7124,6 +7217,12 @@ PROCESS_FREE_TORI:
 								
 								startVertex = nil ;
 								endVertex = [ a endVertex ] ;
+							
+								endTouch = a->endTouchLimit ;
+							
+								if (a->startTouchLimit == YES && a->endTouchLimit == YES ) {
+									startTouch = YES ;
+								}
 							}
 							
 						SMArc *copyArc ;
@@ -7135,6 +7234,9 @@ PROCESS_FREE_TORI:
 						
 						[ copyArc setStartVertex:startVertex ] ;
 						[ copyArc setEndVertex:endVertex ] ;
+					
+						copyArc->startTouchLimit = startTouch ;
+						copyArc->endTouchLimit = endTouch ;
 						
 						[ copyArc restoreVectorsAndAngle ] ;
 						
@@ -7182,6 +7284,38 @@ PROCESS_FREE_TORI:
 								
 								newSaddleArc = [ [ SMArc alloc ] initWithTorusSection:[ a torusSection ]
 									molecule:self phiStart:phi1 thetaStart:theta1 phiEnd:phi2 thetaEnd:theta2 ] ;
+							
+								if (iDiv == 0) {
+									newSaddleArc->startTouchLimit = a->startTouchLimit ;
+									if (a->startTouchLimit == YES && a->endTouchLimit == YES ) {
+										newSaddleArc->endTouchLimit = YES ;
+									}
+									else {
+										newSaddleArc->endTouchLimit = NO ;
+									}
+
+								}
+								else if( iDiv < nDiv - 1 ) {
+									if (a->startTouchLimit == YES && a->endTouchLimit == YES ) {
+										newSaddleArc->startTouchLimit = YES ;
+										newSaddleArc->endTouchLimit = YES ;
+									}
+									else {
+										newSaddleArc->startTouchLimit = NO ;
+										newSaddleArc->endTouchLimit = NO ;
+									}
+								}
+								else {
+									if (a->startTouchLimit == YES && a->endTouchLimit == YES ) {
+										newSaddleArc->startTouchLimit = YES ;
+										newSaddleArc->endTouchLimit = YES ;
+									}
+									else {
+										newSaddleArc->startTouchLimit = NO ;
+										newSaddleArc->endTouchLimit = a->endTouchLimit ;
+									}
+								}
+
 									
 								[ newArcs addObject:newSaddleArc ] ;
 							}
@@ -7237,7 +7371,7 @@ PROCESS_FREE_TORI:
 		
 		SMTorus *theTorus ;
 		
-		if( ( theTorus = [ a torusSection ] ) != nil && [ a arcType ] != 5  )
+		if( ( theTorus = [ a torusSection ] ) != nil && [ a arcType ] != INTERIORSADDLE )
 			{				
 				[ theTorus registerArcs:newArcs parentArc:a ] ;
 			}
@@ -7247,7 +7381,7 @@ PROCESS_FREE_TORI:
 		return newArcs ;
 	}
 
-- (NSArray *) subdivideTheArc:(SMArc *)a usingLimitPlane:(SMLimitPlane *) plane
+- (NSArray *) subdivideTheArc:(SMArc *)a usingLimitPlane:(SMLimitPlane *) plane usingDivision:(double)div
 	{
 		NSMutableArray *newArcs ;
 	
@@ -7434,11 +7568,20 @@ PROCESS_FREE_TORI:
 			{				
 				[ theTorus registerArcs:newArcs parentArc:a ] ;
 			}
+	
+		// This is a little awkward - now call subdivideArc:usingDivision on each of the newly generated arcs; return the whole lot as an 
+		// array.
+	
+		NSMutableArray *returnArcs = [ NSMutableArray arrayWithCapacity:10 ] ;
+	
+		for( SMArc *nextArc in newArcs ) {
+			[ returnArcs addObjectsFromArray:[ self subdivideArc:nextArc usingDivision:div ] ] ;
+		}
 		
-		return newArcs ;
+		return returnArcs ;
 	}
 
-- (NSArray *) subdivideWithBufferTheArc:(SMArc *)a 
+- (NSArray *) subdivideWithBufferTheArc:(SMArc *)a usingDivision:(double)div
 {
 	NSMutableArray *newArcs ;
 	
@@ -7548,8 +7691,8 @@ PROCESS_FREE_TORI:
 		
 		
 	switch (a->arcType) {
-		case 1:
-		case 3:
+		case REENTRANTR:
+		case REENTRANTL:
 			for( k = 0 ; k < nDiv ; ++k ) {
 				startPhis[k] = a->phiStart ;
 				endPhis[k] = a->phiStart ;
@@ -7557,7 +7700,7 @@ PROCESS_FREE_TORI:
 			
 			break;
 			
-		case 5:
+		case INTERIORSADDLE:
 			
 			for( k = 0 ; k < nDiv ; ++k ) {
 				startPhis[k] = a->phiStart + (a->phiEnd - a->phiStart)*(startThetas[k] - a->thetaStart)/(a->thetaEnd - a->thetaStart) ;
@@ -7579,7 +7722,7 @@ PROCESS_FREE_TORI:
 	newArcs = [ [ NSMutableArray alloc ] initWithCapacity:10 ] ;
 	
 	
-	if( [ a arcType ] != 5  )
+	if( [ a arcType ] != INTERIORSADDLE  )
 		{
 	
 		for( iDiv = 0 ; iDiv < nDiv ; ++iDiv )
@@ -7699,6 +7842,8 @@ PROCESS_FREE_TORI:
 		
 		}
 		
+	// Next, subdivide each arc using the division (if it is > 0 ) - need to put the child arcs in the same order
+	
 	
 		
 	
